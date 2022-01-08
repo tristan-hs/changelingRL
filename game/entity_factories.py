@@ -23,18 +23,12 @@ goblin = Actor(
 	description="gobgobgob"
 )
 
-enemy_sets = [
-[goblin],
-[goblin],
-[goblin],
-[goblin],
-[goblin],
-[goblin],
-[goblin],
-[goblin],
-[goblin],
-[goblin]
-]
+NPC = Actor(
+	color=(120,150,120),
+	ai_cls=ai.ConfusedEnemy,
+	render_order=RenderOrder.ACTOR,
+	description="a foolish human"
+)
 
 rock = Item(
 	color = color.grey,

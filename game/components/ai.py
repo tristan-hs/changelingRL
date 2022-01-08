@@ -192,19 +192,13 @@ class ConfusedEnemy(BaseAI):
     """
 
     def __init__(
-        self, entity: Actor, previous_ai: Optional[BaseAI], turns_remaining: int,
+        self, entity: Actor,
     ):
         super().__init__(entity)
-
-        self.previous_ai = previous_ai
-        self.turns_remaining = turns_remaining
         self.move_speed = entity.move_speed
 
     def decide(self) -> Optional[Action]:
         self._intent = []
-        if self.turns_remaining <= 0:
-            self._intent.append(WaitAction(self.entity))
-            return
 
         for i in range(self.move_speed):
             # Pick a random direction
@@ -223,13 +217,4 @@ class ConfusedEnemy(BaseAI):
             self._intent.append(BumpAction(self.entity, direction_x, direction_y))
 
     def perform(self) -> None:
-        # Revert the AI back to the original state if the effect has run its course.
-        if self.turns_remaining <= 0:
-            self.engine.message_log.add_message(
-                f"The {self.entity.name} is no longer confused.", color.offwhite
-            )
-            self.entity.ai = self.previous_ai
-            return
-        
-        self.turns_remaining -= 1
         super().perform()

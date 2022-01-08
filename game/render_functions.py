@@ -115,7 +115,7 @@ def print_fov_actors(console,player,xy):
                 console.print(x,y,f"{chars.pop(0)})",fg=fg)
             console.print(x+5,y,name,fg=fg)
             y += 1
-            if y > 48:
+            if y > 22:
                 console.print(x+1,y,'...',fg=color.offwhite)
                 break
 

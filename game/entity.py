@@ -237,6 +237,12 @@ class Actor(Entity):
     def take_damage(self, amount: int) -> None:
         self.die()
 
+    def preSpawn(self):
+        if self.name == "<Unnamed>":
+            self.name = random.choice(["Alice","Bob","Charlie","Doug","Emily","Fred","Grish","Hal","Ingus","Josh","Kzyl'xx","Lu","Mo","Ned","Otto","Pete","Quincy","Rod","Stu","Tim","Ulga","Viv","Yan","Zed"])+' '+random.choice(['Green','Blue','Red',"Yellow","Orange","Purple","Cyan","Violet","Indigo","White","Black","Brown","Magenta","Teal","Grey"])
+        if self.char == "?":
+            self.char = self.name[0]
+
 
 class Item(Entity):
     """Any letter"""
@@ -307,9 +313,6 @@ class Item(Entity):
     @color.setter
     def color(self, new_val):
         self._color = new_val
-
-    def preSpawn(self):
-        return
 
     #remove the item from the game
     def consume(self):

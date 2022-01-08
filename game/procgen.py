@@ -146,9 +146,6 @@ class MainRoom(Room):
 		y1 = y2 = self.sprout[1]
 		tiles = [sap]
 
-		if self.closet:
-			print(f"-> {sap}")
-
 		min_size = self.min_size
 		max_size = self.max_size
 		attempts = 0
@@ -252,8 +249,21 @@ def generate_dungeon(floor_number, map_width, map_height, engine, game_mode, ite
 	
 	place_player(dungeon,hall.center,engine.player)
 
+	NPC_number = random.choice(range(8,14))
+	for i in range(NPC_number):
+		room = random.choice(dungeon.rooms)
+		tiles = room.inner
+		random.shuffle(tiles)
+		for tile in tiles:
+			if any(entity.xy == tile for entity in dungeon.entities):
+				continue
+			entity_factories.NPC.spawn(dungeon,*tile)
+			break
+
 	return dungeon if any(room.closet for room in dungeon.rooms) else generate_dungeon(floor_number,map_width,map_height,engine,game_mode,items)
 
+def place_player(dungeon,xy,player):
+	player.place(*xy,dungeon)
 
 """
 ================= OLD STUFF BELOW HERE ====================
@@ -753,9 +763,6 @@ def generate_dungeon_map(floor_number,map_width,map_height,engine,items,room_tar
 
 	place_entities(dungeon,map_width,map_height)
 	return dungeon
-
-def place_player(dungeon,xy,player):
-	player.place(*xy,dungeon)
 
 def generate_consumable_testing_ground(engine,items, has_boss=False, mongeese=False):
 	# wide open space with all consumables scattered around
