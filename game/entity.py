@@ -268,6 +268,7 @@ class Actor(Entity):
                     location = random.choice(self.gamemap.rooms)
                 schedule[time] = location
             self.schedule = schedule
+        self.last_peed = random.choice(range(240))
 
 
 class Item(Entity):

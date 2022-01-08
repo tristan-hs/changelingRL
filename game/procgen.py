@@ -105,7 +105,7 @@ class MainRoom(Room):
 		if closet.valid:
 			closet.finalize()
 			initials = ''.join([word[0] for word in self.name.split(' ')])
-			suffix = random.choice([". Closet", ". Toilet"])
+			suffix = random.choice([". Toilet"])
 			closet.name = initials + suffix
 
 	@property

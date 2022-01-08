@@ -42,6 +42,13 @@ class BaseAI(Action):
         raise NotImplementedError()
 
     def perform(self) -> None:
+        self._intent = []
+
+        ai = self.set_goals()
+        if ai != self:
+            self.entity.ai = ai
+            return ai.perform()
+
         self.decide()
         for i in self.intent:
             try:
@@ -84,8 +91,26 @@ class BaseAI(Action):
         # Convert from List[List[int]] to List[Tuple[int, int]].
         return [(index[0], index[1]) for index in path]
 
+    def goto(self,tile):
+        self.path = self.get_path_to(*self.target_tile)
+
+        if self.path:
+            next_move = self.path[0:self.move_speed]
+            fx, fy = self.entity.x, self.entity.y
+            for m in next_move:
+                if not self.engine.game_map.tile_is_walkable(*m):
+                    break
+                dx = m[0]-fx
+                dy = m[1]-fy
+                self._intent.append(BumpAction(self.entity, dx, dy))
+                fx += dx
+                fy += dy
+
+
 
 class DefaultNPC(BaseAI):
+    chance_to_chat = 0.2
+
     def __init__(self, entity: Actor):
         super().__init__(entity)
         self.path = None
@@ -96,44 +121,34 @@ class DefaultNPC(BaseAI):
     def description(self):
         return "content"
 
-    def decide(self):
-        self._intent = []
-
+    def set_goals(self):
         # make sure I'm in the right mode
-        if not True:
-            print("I'm becoming suspicious or alarmed!")
-        
+        if self.engine.turn_count - self.entity.last_peed > 240:
+            return PeeNPC(self.entity)
+
+        # decide on my target
+        if self.entity.room is not self.entity.scheduled_room and not self.target_tile:
+            self.target_tile = random.choice(self.entity.scheduled_room.inner)
+
+        return self
+
+    def decide(self):
         # random chance to talk to whoever's next to me
         adjacent_actors = self.entity.get_adjacent_actors()
-        if len(adjacent_actors) > 0 and random.random() > 0.8:
+        if len(adjacent_actors) > 0 and random.random() < self.chance_to_chat:
             a = random.choice(adjacent_actors)
             d = (a.x-self.entity.x,a.y-self.entity.y)
             self._intent.append(BumpAction(self.entity, d[0], d[1]))
             return
 
         # try to get where I'm supposed to be
-        if self.entity.xy not in self.entity.scheduled_room.tiles and not self.target_tile:
-            self.target_tile = random.choice(self.entity.scheduled_room.inner)
-
         if self.target_tile:
             if self.entity.xy == self.target_tile:
                 self.target_tile = None
             else:
-                self.path = self.get_path_to(*self.target_tile)
-
-                if self.path:
-                    next_move = self.path[0:self.move_speed]
-                    fx, fy = self.entity.x, self.entity.y
-                    for m in next_move:
-                        if not self.engine.game_map.tile_is_walkable(*m):
-                            break
-                        dx = m[0]-fx
-                        dy = m[1]-fy
-                        self._intent.append(BumpAction(self.entity, dx, dy))
-                        fx += dx
-                        fy += dy
-                    if len(self._intent) > 0:
-                        return
+                self.goto(self.target_tile)
+                if len(self._intent) > 0:
+                    return
 
         # wander my assigned area
         if random.random() > 0.5:
@@ -143,6 +158,54 @@ class DefaultNPC(BaseAI):
 
         # chill
         self._intent.append(WaitAction(self.entity))
+
+
+class PeeNPC(DefaultNPC):
+    chance_to_chat = 0.1
+    pee_duration = 10
+
+    @property
+    def description(self):
+        return "needs to pee"
+
+    def set_goals(self):
+        if self.entity.xy == self.target_tile:
+            self.pee_duration -= 1
+            if self.pee_duration < 1:
+                self.entity.last_peed = self.engine.turn_count
+                return DefaultNPC(self.entity)
+        else:
+            self.target_tile = self.pick_toilet()
+
+        return self
+
+    def decide(self):
+        # wait if you're in the right place
+        if self.entity.xy == self.target_tile:
+            self._intent.append(WaitAction(self.entity))
+            return
+        # otherwise default stuff will get you there
+        super().decide()
+        
+
+    def pick_toilet(self):
+        toilets = [room for room in self.entity.gamemap.rooms if room.closet]
+        path = None
+        for toilet in toilets:
+            def occupied():
+                for tile in toilet.inner:
+                    if any(entity.xy == tile for entity in self.entity.gamemap.entities):
+                        return True
+            if occupied():
+                continue
+            for tile in toilet.inner:
+                this_path = self.get_path_to(*tile)
+                if this_path and (not path or len(this_path) < len(path[1])):
+                    path = (tile,this_path)
+
+        if path:
+            return path[0]
+
 
 class HostileEnemy(BaseAI):
 

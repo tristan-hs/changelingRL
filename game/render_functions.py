@@ -80,14 +80,16 @@ def render_names_at_mouse_location(
             name = NAMES[entity[5]]
             fg = color.grey
             console.print(x+3,y+e,chr(tile[0]),tuple(tile[1]),tuple(tile[2]))
+            x_mod = 2
         else:
-            engine.game_map.print_tile(entity,(x+3,y+e),console)
+            # engine.game_map.print_tile(entity,(x+3,y+e),console)
             name = entity.label if len(entity.label) > 1 else '???'
             fg = entity.color
+            x_mod = 0
         
         name = name if len(name) < 13 else name[:10]+'..'
         console.print(x,y+e,chars.pop(0)+')',fg=fg)
-        console.print(x+5,y+e,name,fg=fg)
+        console.print(x+3+x_mod,y+e,name,fg=fg)
         if e > 6:
             console.print(x+1,y+e+1,'...',fg=color.offwhite)
             break
@@ -105,7 +107,7 @@ def print_fov_actors(console,player,xy):
     for actor in sorted(list(player.gamemap.actors),key=lambda a:a.id):
         if actor is player:
             continue
-        if player.gamemap.print_actor_tile(actor,(x+3,y),console):
+        if player.gamemap.visible[actor.x,actor.y] or player.gamemap.smellable(actor):
             known = (player.gamemap.visible[actor.x,actor.y] or player.gamemap.smellable(actor,True))
             name = actor.name if known else '???'
             if len(name) > 12:
@@ -113,7 +115,7 @@ def print_fov_actors(console,player,xy):
             fg = actor.color if known else color.yellow
             if known:
                 console.print(x,y,f"{chars.pop(0)})",fg=fg)
-            console.print(x+5,y,name,fg=fg)
+            console.print(x+3,y,name,fg=fg)
             y += 1
             if y > 22:
                 console.print(x+1,y,'...',fg=color.offwhite)
