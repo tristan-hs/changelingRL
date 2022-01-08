@@ -97,7 +97,7 @@ door = new_tile(
     name='doorway',
     flavor='The threshold between rooms.',
     walkable=True,
-    transparent=True,
+    transparent=False,
     dark=(ord("+"), (100,50,50), (5,5,5)),
     light=(ord("+"), (150,75,75), (10,10,10))
 )
