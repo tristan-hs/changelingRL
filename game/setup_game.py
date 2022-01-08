@@ -45,6 +45,7 @@ def new_game(meta) -> Engine:
     engine = Engine(player=player, meta=meta)
 
     game_mode = 'default'
+    game_mode = 'overview'
     # game_mode = 'consumable testing'
     # game_mode = 'god mode'
 

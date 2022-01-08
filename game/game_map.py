@@ -37,12 +37,22 @@ class GameMap:
         self.mapped = np.full(
             (width, height), fill_value=False, order="F"
         )
+        self.rooms = []
 
         self.downstairs_location = (0, 0)
         self.floor_number = floor_number
         self.item_factories = items
         self._next_id = 1
         self.game_mode = game_mode
+
+        if self.game_mode == 'overview':
+            self.explored = np.full((width,height),fill_value=True,order="F")
+
+    def room_at_location(self,x,y):
+        for room in self.rooms:
+            if any(tile == (x,y) for tile in room.tiles):
+                return room.name
+        return ''
 
     @property
     def actors(self) -> Iterable[Actor]:
@@ -286,4 +296,5 @@ class GameWorld:
             engine=self.engine,
             floor_number=self.current_floor,
             items=self.items,
+            game_mode=self.game_mode
         )

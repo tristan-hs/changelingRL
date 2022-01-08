@@ -12,12 +12,247 @@ from game.entity import Item
 
 from game import entity_factories, tile_types
 from game.game_map import GameMap
+from game.render_functions import DIRECTIONS
 
 if TYPE_CHECKING:
 	from game.engine import Engine
 
-def generate_dungeon(floor_number, map_width, map_height, engine):
-	pass
+
+class Room:
+	closet = False
+
+	def __init__(self, x: int, y: int, map_width: int, map_height: int, dungeon, name:str=''):
+		self.seed = (x,y)
+		self.tiles = [self.seed]
+		self.map_width = map_width
+		self.map_height = map_height
+		self.rooms = dungeon.rooms
+		self.name = name
+		self.dungeon = dungeon
+
+	def finalize(self):
+		for tile in self.inner:
+			self.dungeon.tiles[tile] = tile_types.floor
+		self.dungeon.rooms.append(self)
+
+class MainHall(Room):
+	def __init__(self,map_width,map_height,dungeon):
+		super().__init__(map_width//2,map_height//2,map_width,map_height,dungeon)
+		self.name = "Main Hall"
+		self.generate()
+
+	def generate(self):
+		directions = [[0,1],[0,-1],[-1,0],[1,0]]
+		random.shuffle(directions)
+		for i in range(4):
+			if i > 0 and random.random() > 0.5:
+				continue
+			
+			growth_dir = directions[i]
+			growth_axis = 0 if growth_dir[0] != 0 else 1
+			static_axis = 0 if growth_axis == 1 else 0
+
+			width = random.choice([2,3,4,5]) if i > 0 else 5
+			x,y = self.seed
+
+			length_limit = 9
+			length = random.choice(range(width,length_limit)) if i > 0 else 8
+
+			x_range = (x-2,x-2+width) if growth_axis == 1 else (x,x+(length*growth_dir[0]))
+			y_range = (y-2,y-2+width) if growth_axis == 0 else (y,y+(length*growth_dir[1]))
+
+			x_range = (x_range[1],x_range[0]) if x_range[0] > x_range[1] else x_range
+			y_range = (y_range[1],y_range[0]) if y_range[0] > y_range[1] else y_range
+
+			for x in range(*x_range):
+				for y in range(*y_range):
+					tile = (x,y)
+					if tile not in self.tiles:
+						self.tiles.append(tile)
+
+	def finalize(self):
+		super().finalize()
+		self.dungeon.upstairs_location = self.center
+
+	@property
+	def center(self):
+		return self.seed
+
+	@property
+	def inner(self):
+		return self.tiles
+
+class MainRoom(Room):
+	min_size = 3
+	max_size = 7
+
+	def __init__(self,map_width,map_height,dungeon,parent):
+		self.parent = parent
+		self.dungeon = dungeon
+
+		self.valid = False
+		self.seed = None
+		self.find_seed()
+		if not self.seed:
+			return
+
+		super().__init__(self.seed[0],self.seed[1],map_width,map_height,dungeon)
+
+		self.generate()
+
+	def add_closet(self):
+		closet = Closet(self.map_width,self.map_height,self.dungeon,self)
+		if closet.valid:
+			closet.finalize()
+			initials = ''.join([word[0] for word in self.name.split(' ')])
+			suffix = random.choice([". Closet", ". Toilet"])
+			closet.name = initials + suffix
+
+	@property
+	def inner(self):
+		return [tile for tile in self.tiles if tile[0] not in [self.x1,self.x2] and tile[1] not in [self.y1,self.y2] ]
+
+	def finalize(self):
+		super().finalize()
+		self.dungeon.tiles[self.sprout] = tile_types.door
+
+	def find_seed(self):
+		attempts = 1000
+		for i in range(attempts):
+			if i == attempts:
+				raise Exception("No seed found")
+			seed = random.choice(self.parent.tiles)
+			sprouts = []
+			for d in DIRECTIONS:
+				if abs(d[0]) == abs(d[1]):
+					continue
+				sprout = (seed[0]+d[0],seed[1]+d[1])
+				if any(sprout in room.tiles for room in self.dungeon.rooms):
+					continue
+				sprouts.append(sprout)
+			if not sprouts:
+				continue
+			self.seed = seed
+			self.sprout = random.choice(sprouts)
+			break
+
+	def generate(self):
+		forbidden_dir = (self.seed[0]-self.sprout[0],self.seed[1]-self.sprout[1])
+
+		ce = -1
+
+		sap = (self.sprout[0] + (forbidden_dir[0]* ce), self.sprout[1] + (forbidden_dir[1]* ce))
+		x1 = x2 = self.sprout[0]
+		y1 = y2 = self.sprout[1]
+		tiles = [sap]
+
+		if self.closet:
+			print(f"-> {sap}")
+
+		min_size = self.min_size
+		max_size = self.max_size
+		attempts = 0
+
+		while x2-x1 < max_size or y2-y1 < max_size:
+			potential_dirs = [d for d in DIRECTIONS if d != forbidden_dir and abs(d[0]) != abs(d[1]) and (d[0] == 0 or x2-x1 < max_size) and (d[1] == 0 or y2-y1 < max_size)]
+			random.shuffle(potential_dirs)
+
+			grew = False
+
+			for d in potential_dirs:
+				nx1 = x1 if d[0] > -1 else x1-1
+				nx2 = x2 if d[0] < 1 else x2+1
+				ny1 = y1 if d[1] > -1 else y1-1
+				ny2 = y2 if d[1] < 1 else y2+1
+
+				if nx1 < 0 or nx2 > self.map_width-3 or ny1 < 0 or ny2 > self.map_height-3:
+					continue
+
+				new_tiles = []
+				for x in range(nx1,nx2+1):
+					for y in range(ny1,ny2+1):
+						new_tiles.append((x,y))
+
+				if any(tile in room.tiles for room in self.dungeon.rooms for tile in new_tiles):
+					continue
+
+				def next_to(tile1,tile2):
+					if abs(tile1[0]-tile2[0]) < 2 and abs(tile1[1]-tile1[1]) < 2:
+						return True
+					return False
+
+				def check_adjacency():
+					rooms = [r for r in self.dungeon.rooms if r.closet or r.name == "Main Hall"]
+					for r in rooms:
+						for t1 in r.tiles:
+							if any(next_to(t1,t2) for t2 in new_tiles):
+								return False
+					return True
+
+				if self.closet and not check_adjacency():
+					continue
+
+				tiles = new_tiles
+				x1,x2,y1,y2 = (nx1,nx2,ny1,ny2)
+				grew = True
+				break
+
+			if not grew:
+				break
+
+			if self.closet and (x2-x1 >= min_size or y2-y1 >= min_size) and x2-x1 > 0 and y2-y1 > 0:
+				break
+
+			if x2-x1 > min_size and y2-y1 > min_size and random.random() < 0.29:
+				break
+
+		if x2-x1 > min_size and y2-y1 > min_size or (self.closet and (x2-x1 >= min_size or y2-y1 >= min_size) and x2-x1 > 0 and y2-y1 > 0):
+			self.valid = True
+			self.tiles = tiles
+			self.x1,self.x2,self.y1,self.y2 = (x1,x2,y1,y2)
+			if self.closet:
+				self.sprout = self.seed
+
+
+class Closet(MainRoom):
+	min_size = 1
+	max_size = 2
+	closet = True
+
+	@property
+	def inner(self):
+		return self.tiles
+
+
+
+def generate_dungeon(floor_number, map_width, map_height, engine, game_mode, items):
+	# per room:
+			# give it a closet
+
+	dungeon = GameMap(engine, map_width, map_height, floor_number, entities=[engine.player], items=[], game_mode=game_mode)
+	
+	hall = MainHall(map_width,map_height,dungeon)
+	hall.finalize()
+
+	room_names = ["Bunks","Dining H.","Engine R.","Bridge","Observations","Lab","Rec Room","Holohall","Equipment","Workshop","Green Room","Salon"]
+	random.shuffle(room_names)
+
+	room_number = random.choice(range(4,7))
+	for i in range(room_number):
+		attempts = 1000
+		for i in range(attempts):
+			room = MainRoom(map_width,map_height,dungeon,hall)
+			if not room.valid:
+				continue
+
+			room.name = room_names.pop()
+			room.finalize()
+			room.add_closet()
+			break
+	
+	place_player(dungeon,hall.center,engine.player)
+
+	return dungeon if any(room.closet for room in dungeon.rooms) else generate_dungeon(floor_number,map_width,map_height,engine,game_mode,items)
 
 
 """
@@ -391,14 +626,15 @@ def generate_maze(floor_number,map_width,map_height,engine,items):
 	place_entities(dungeon,map_width,map_height)
 	return dungeon
 
+"""
 def generate_dungeon(
 	floor_number: int,
 	map_width: int,
 	map_height: int,
 	engine: Engine,
 	items: Iterable,
+	game_mode: str
 ) -> GameMap:
-	"""Generate a new dungeon map"""
 
 	# set a bunch of parameters based on the given arguments
 	room_range = {
@@ -416,13 +652,13 @@ def generate_dungeon(
 	player = engine.player
 	entities = set(player.inventory.items)
 	entities.update([player])
-	dungeon = GameMap(engine, map_width, map_height, floor_number, entities=entities, items=items)
+	dungeon = GameMap(engine, map_width, map_height, floor_number, entities=entities, items=items, game_mode=game_mode)
 
 	center_of_last_room = (0,0)
 	attempts = 0
 
 	return generate_dungeon_map(floor_number,map_width,map_height,engine,items,room_target,rooms_chain,room_min_size,room_max_size,player,entities,dungeon)
-
+"""
 
 def generate_dungeon_map(floor_number,map_width,map_height,engine,items,room_target,rooms_chain,room_min_size,room_max_size,player,entities,dungeon,first_room_location=None):
 	attempts = 0

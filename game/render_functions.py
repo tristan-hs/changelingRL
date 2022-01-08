@@ -64,7 +64,9 @@ def render_names_at_mouse_location(
     mouse_x, mouse_y = engine.mouse_location
     x,y = (61,17)
 
-    console.print(61,16,"Break Room",fg=color.grey)
+    room = engine.game_map.room_at_location(mouse_x,mouse_y)
+    room += f" {mouse_x},{mouse_y}"
+    console.print(61,16,room,fg=color.grey)
 
     if not engine.game_map.in_bounds(mouse_x, mouse_y):
         return
@@ -95,7 +97,9 @@ def render_names_at_mouse_location(
 def print_fov_actors(console,player,xy):
     x,y = (61,17)
 
-    console.print(61,16,"Break Room",fg=color.grey)
+    room = player.engine.game_map.room_at_location(player.x,player.y)
+    room += f" {player.x},{player.y}"
+    console.print(61,16,room,fg=color.grey)
 
     chars = ALPHA_CHARS[:]
     for actor in sorted(list(player.gamemap.actors),key=lambda a:a.id):
