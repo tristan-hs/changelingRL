@@ -8,9 +8,9 @@ import numpy as np  # type: ignore
 import tcod
 
 from game.exceptions import Impossible
-
 from game.actions import Action, BumpAction, MeleeAction, MovementAction, WaitAction
 from game import color
+from game.render_functions import DIRECTIONS
 
 if TYPE_CHECKING:
     from game.entity import Actor
@@ -85,8 +85,64 @@ class BaseAI(Action):
         return [(index[0], index[1]) for index in path]
 
 
+class DefaultNPC(BaseAI):
+    def __init__(self, entity: Actor):
+        super().__init__(entity)
+        self.path = None
+        self.move_speed = entity.move_speed
+        self.target_tile = None
 
+    @property
+    def description(self):
+        return "content"
 
+    def decide(self):
+        self._intent = []
+
+        # make sure I'm in the right mode
+        if not True:
+            print("I'm becoming suspicious or alarmed!")
+        
+        # random chance to talk to whoever's next to me
+        adjacent_actors = self.entity.get_adjacent_actors()
+        if len(adjacent_actors) > 0 and random.random() > 0.8:
+            a = random.choice(adjacent_actors)
+            d = (a.x-self.entity.x,a.y-self.entity.y)
+            self._intent.append(BumpAction(self.entity, d[0], d[1]))
+            return
+
+        # try to get where I'm supposed to be
+        if self.entity.xy not in self.entity.scheduled_room.tiles and not self.target_tile:
+            self.target_tile = random.choice(self.entity.scheduled_room.inner)
+
+        if self.target_tile:
+            if self.entity.xy == self.target_tile:
+                self.target_tile = None
+            else:
+                self.path = self.get_path_to(*self.target_tile)
+
+                if self.path:
+                    next_move = self.path[0:self.move_speed]
+                    fx, fy = self.entity.x, self.entity.y
+                    for m in next_move:
+                        if not self.engine.game_map.tile_is_walkable(*m):
+                            break
+                        dx = m[0]-fx
+                        dy = m[1]-fy
+                        self._intent.append(BumpAction(self.entity, dx, dy))
+                        fx += dx
+                        fy += dy
+                    if len(self._intent) > 0:
+                        return
+
+        # wander my assigned area
+        if random.random() > 0.5:
+            dx,dy = random.choice(DIRECTIONS)
+            self._intent.append(BumpAction(self.entity,dx,dy))
+            return
+
+        # chill
+        self._intent.append(WaitAction(self.entity))
 
 class HostileEnemy(BaseAI):
 

@@ -1127,13 +1127,9 @@ class InspectHandler(AskUserEventHandler):
             self.frame_color = thing._color if hasattr(thing,'ai') else thing.color
             self.flavor = thing.flavor
 
-        self.frame_width = max(len(i) for i in (self.title, range(31)) if i is not None)+4
-        if engine.player.x <= 30:
-            self.frame_x = 80-self.frame_width-1
-        else:
-            self.frame_x = 1
+        self.frame_width = max(len(i) for i in (self.title, range(16)) if i is not None)+4
+        self.frame_x = 60-self.frame_width-1
         self.frame_y = 1
-
         self.parent = parent_handler
 
     def get_frame_height(self, console: tcod.Console) -> int:
@@ -1147,29 +1143,8 @@ class InspectHandler(AskUserEventHandler):
         flavor = inner
 
         if hasattr(self.thing, 'ai'):
-            inner += 1
-            if self.thing.name != "Decoy":
-                inner += 3
+            inner += 4
             inner += len(self.thing.statuses)
-
-        elif not self.is_tile and self.thing.identified:
-            self.digest_height = console.get_height_rect(
-                self.frame_x+10,self.frame_y+1,self.frame_width-11,47-inner,self.thing.edible.description
-            )
-            inner += self.digest_height
-
-            self.spit_height = console.get_height_rect(
-                self.frame_x+10,self.frame_y+1,self.frame_width-11,47-inner,self.thing.spitable.description
-            )
-            inner += self.spit_height
-            inner += 1
-
-            if self.thing.stat:
-                self.passive_height = console.get_height_rect(
-                    self.frame_x+10,self.frame_y+1,self.frame_width-11,47-inner,f"Passive: +1 to AAAA while in WORD MODE"
-                )
-                inner += self.passive_height
-                inner += 1
 
         return inner if inner != flavor else inner - 1
 
@@ -1195,49 +1170,16 @@ class InspectHandler(AskUserEventHandler):
             return
 
         if hasattr(self.thing, 'ai'):
+            #print schedule (for now)
+            sched = ''
+            times = list(self.thing.schedule.keys())
+            times.sort()
+            for i in times:
+                k = f"0{i}" if i < 10 else i
+                sched += f"{k}:00 - {self.thing.schedule[i].name}\n"
+            console.print(x,y,sched,color.grey)
 
-            if self.thing.name != "Decoy":
-                #print health bar
-                console.print(x,y,'HP',fg=color.offwhite)
-                for i in range(int(self.thing.max_char)+1):
-                    if i <= int(self.thing.char):
-                        bg = self.thing._color
-                    elif i <= int(self.thing.base_char):
-                        bg = color.statue
-                    else:
-                        bg = color.dark_red
-
-                    console.print(x+4+i,y,' ',fg=None,bg=bg)
-                y += 1
-                #print move speed
-                console.print(x,y,'SPD',fg=color.offwhite)
-                for i in range(self.thing.move_speed):
-                    console.print(x+4+i,y,D_ARROWS[6],fg=self.thing._color)
-                y += 2
-                #print ai info
-            console.print(x,y,self.thing.ai.description,fg=color.offwhite)
-            y += 1
-            for status in self.thing.statuses:
-                dur = str(status.duration)
-                dur = dur if len(dur) < 2 else '!'
-                console.print(x,y,f"{status.description.upper()} {dur}",fg=status.color)
-                y += 1
-            y += 1
-
-        elif not self.is_tile and self.thing.identified:
-            #print spit
-            console.print(x,y,"Digest:",color.offwhite)
-            self.print_multicolor_box(console, x+9,y,self.frame_width-11,self.frame_height-2,self.thing.edible.description_parts)
-            y += self.digest_height+1
-            #print digest
-            console.print(x,y,"Spit:",color.offwhite)
-            self.print_multicolor_box(console, x+9,y,self.frame_width-11,self.frame_height-2,self.thing.spitable.description_parts)
-            y += self.spit_height+1
-            #print passive
-            if self.thing.stat:
-                console.print(x,y,"Passive:",color.offwhite)
-                console.print_box(x+9,y,self.frame_width-11,self.frame_height-2,f"+1 to {self.thing.stat} while in WORD MODE",color.offwhite)
-                y += self.passive_height+1
+            y += 4
         
         if self.flavor:
             console.print_box(x,y,self.frame_width-2,self.frame_height-2,self.flavor,color.grey)
@@ -1258,7 +1200,6 @@ class InspectHandler(AskUserEventHandler):
 
     def on_exit(self):
         return self.parent
-
 
 
 

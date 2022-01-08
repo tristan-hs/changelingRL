@@ -25,7 +25,7 @@ goblin = Actor(
 
 NPC = Actor(
 	color=(120,150,120),
-	ai_cls=ai.ConfusedEnemy,
+	ai_cls=ai.DefaultNPC,
 	render_order=RenderOrder.ACTOR,
 	description="a foolish human"
 )

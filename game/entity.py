@@ -144,6 +144,13 @@ class Entity:
                 actors.append(a)
         return actors
 
+    @property
+    def room(self):
+        for room in self.gamemap.rooms:
+            if self.xy in room.tiles:
+                return room
+        return None
+
 
 class Actor(Entity):
     def __init__(
@@ -179,6 +186,7 @@ class Actor(Entity):
         self.ai: Optional[BaseAI] = ai_cls(self)
         self.statuses = []
         self.cause_of_death = ''
+        self.schedule = {}
 
     @property
     def color(self):
@@ -192,6 +200,15 @@ class Actor(Entity):
     def is_alive(self) -> bool:
         """Returns True as long as this actor can perform actions."""
         return bool(self.ai)
+
+    @property
+    def scheduled_room(self):
+        time_block = 0
+        for k in self.schedule.keys():
+            if k-1 <= self.engine.hour and k > time_block:
+                time_block = k
+        time_block = 22 if time_block == 0 else time_block
+        return self.schedule[time_block]
 
     def can_move(self):
         # Make sure player can move, otherwise die    
@@ -238,10 +255,19 @@ class Actor(Entity):
         self.die()
 
     def preSpawn(self):
-        if self.name == "<Unnamed>":
-            self.name = random.choice(["Alice","Bob","Charlie","Doug","Emily","Fred","Grish","Hal","Ingus","Josh","Kzyl'xx","Lu","Mo","Ned","Otto","Pete","Quincy","Rod","Stu","Tim","Ulga","Viv","Yan","Zed"])+' '+random.choice(['Green','Blue','Red',"Yellow","Orange","Purple","Cyan","Violet","Indigo","White","Black","Brown","Magenta","Teal","Grey"])
+        while self.name == "<Unnamed>" or self.name in [e.name for e in self.gamemap.entities]:
+            self.name = random.choice(["Alice","Bob","Charlie","Doug","Emily","Fred","Grish","Hal","Ingus","Josh","Kzyl'xx","Lu","Mo","Ned","Otto","Pete","Quincy","Rod","Stu","Tim","Ulga","Viv","Yan","Zed"])
         if self.char == "?":
             self.char = self.name[0]
+        if not self.schedule:
+            times = {8,12,18,22}
+            schedule = {}
+            for time in times:
+                location = random.choice(self.gamemap.rooms)
+                while location.name == "Main Hall" or location.closet or location in schedule.values():
+                    location = random.choice(self.gamemap.rooms)
+                schedule[time] = location
+            self.schedule = schedule
 
 
 class Item(Entity):

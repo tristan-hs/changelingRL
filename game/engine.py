@@ -3,6 +3,7 @@ from __future__ import annotations
 import lzma
 import pickle
 import os
+import math
 
 from typing import TYPE_CHECKING
 
@@ -36,6 +37,7 @@ class Engine:
         self.meta = meta
         self.confirmed_in_combat = False
         self.difficulty = meta.difficulty
+        self.meta.do_combat_confirm = False
 
         self.history = []
 
@@ -46,6 +48,10 @@ class Engine:
     @property
     def fov_radius(self):
         return 8
+
+    @property
+    def hour(self):
+        return math.floor(self.turn_count/20) % 24
 
     # field of sense -- through walls
     @property
