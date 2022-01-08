@@ -147,12 +147,19 @@ class MeleeAction(ActionWithDirection):
                 f"{attack_desc} But it does no damage.", color.offwhite
             )
 
+class TalkAction(ActionWithDirection):
+    def perform(self) -> None:
+        target = self.blocking_entity
+        self.engine.message_log.add_message(
+            f"?: Hello there, {target.name}!", color.offwhite, self.entity.label, self.entity.color
+        )
+
 
 class BumpAction(ActionWithDirection):
     def perform(self) -> None:
         if self.blocking_entity:
             self.meleed = True
-            return MeleeAction(self.entity, self.dx, self.dy).perform()
+            return TalkAction(self.entity, self.dx, self.dy).perform()
 
         return MovementAction(self.entity, self.dx, self.dy).perform()
 
