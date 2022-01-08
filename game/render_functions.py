@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Tuple, TYPE_CHECKING
 
 import random
+import math
 
 from game import color
 from game.message_log import MessageLog
@@ -19,68 +20,51 @@ D_ARROWS = ['↑', '↓', '\\', '←', '/', '/','→','\\']
 D_KEYS = ['K','J','Y','H','B','U','L','N']
 ALPHA_CHARS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
 
-def render_dungeon_level(
-    console: Console, dungeon_level: int, location: Tuple[int, int], turn_count: int, do_turn_count: bool
+def render_run_info(
+    console: Console, turn_count: int, player
 ) -> None:
     """
     Render the level the player is currently on, at the given location.
     """
-    x, y = location
-    x -= 1
     c = color.grey
-    dungeon_level = dungeon_level if len(str(dungeon_level)) > 1 else f"0{dungeon_level}"
 
-    if do_turn_count:
-        turn_count = str(turn_count)
-        for i in [9,99,999]:
-            if int(turn_count) < i:
-                turn_count = '0' + turn_count
-        if int(turn_count) > 99999:
-            turn_count = ' bruh'
-        if int(turn_count) > 9999:
-            turn_count = turn_count[0]+turn_count[1]+'.'+turn_count[2]+'k'
+    # render day x + clock time
 
-        console.draw_frame(
-            x=x-2,
-            y=+2,
-            width=8,
-            height=3,
-            clear=True,
-            fg=color.grey,
-            bg=(0,0,0)
-        )
-        console.print(x=x-1,y=y+3,string=f"T{turn_count}", fg=color.grey)
+    day = math.floor(turn_count / 480)
+    day = f"{day}" if day > 9 else f"0{day}"
 
-    console.draw_frame(
-        x=x,
-        y=y,
-        width=5,
-        height=3,
-        clear=True,
-        fg=c,
-        bg=(0,0,0)
-    )
-    console.print(x=x+1, y=y+1, string=f"D{dungeon_level}", fg=c)
+    hour = math.floor(turn_count/20) % 24
+    hour = f"{hour}" if hour > 9 else f"0{hour}"
+
+    minute = (turn_count*3) % 60
+    minute = f"{minute}" if minute > 9 else f"0{minute}"
+
+    console.print(66,1,f"{hour}:{minute}, day {day}")
+
+    console.draw_frame(60,3,20,4)
+    console.print_box(61,3,2,1,"ID")
+    console.print_box(61,4,18,2,"John Doe\nFurnace Operator",fg=player.color)
+
+    console.draw_frame(60,8,20,6)
+    console.print_box(61,8,8,1,"SCHEDULE")
+    console.print_box(61,9,18,4,"07:00 - Dining H.\n12:00 - Workshop\n18:00 - Deli\n22:00 - Bunks",fg=color.grey)
+
+    console.draw_frame(60,15,20,10)
+    console.print_box(61,15,12,1,"SURROUNDINGS")
+
+    console.draw_frame(60,26,20,24)
+    console.print_box(61,26,3,1, "LOG")
 
 def render_instructions(console: Console, location: Tuple[int,int]) -> None:
-    x, y = location
-    l0 = f"{D_KEYS[2]} {D_KEYS[0]} {D_KEYS[5]} (?)info"
-    l1 = f" {D_ARROWS[2]}{D_ARROWS[0]}{D_ARROWS[5]}  (.)wait"
-    l2 = f"{D_KEYS[3]}{D_ARROWS[3]}.{D_ARROWS[6]}{D_KEYS[6]} (>)descend"
-    l3 = f" {D_ARROWS[4]}{D_ARROWS[1]}{D_ARROWS[7]}  (i)nventory"
-    l4 = f"{D_KEYS[4]} {D_KEYS[1]} {D_KEYS[7]}"
-    l5 = "      "
-    l7 = "     e(x)amine"
-    l6 = "    re(v)iew"
-    l8 = f"   per(c)eive"
-
-    for i,l in enumerate([l0,l1,l2,l3,l4,l5,l6,l7,l8]):
-        console.print(x=x, y=y+i, string=l, fg=color.dark_grey)
+    pass
 
 def render_names_at_mouse_location(
     console: Console, x: int, y: int, engine: Engine
 ) -> None:
     mouse_x, mouse_y = engine.mouse_location
+    x,y = (61,17)
+
+    console.print(61,16,"Break Room",fg=color.grey)
 
     if not engine.game_map.in_bounds(mouse_x, mouse_y):
         return
@@ -109,7 +93,10 @@ def render_names_at_mouse_location(
 
 
 def print_fov_actors(console,player,xy):
-    x,y = xy
+    x,y = (61,17)
+
+    console.print(61,16,"Break Room",fg=color.grey)
+
     chars = ALPHA_CHARS[:]
     for actor in sorted(list(player.gamemap.actors),key=lambda a:a.id):
         if actor is player:
@@ -139,6 +126,4 @@ def print_fov_actors(console,player,xy):
             name = name[:10]+'..'
         console.print(x,y,f"{chars.pop(0)})",fg=fg)
         console.print(x+5,y,name,fg=fg)
-
-    console.print(6,49,"(c)ontrols",color.dark_grey)
 

@@ -32,7 +32,7 @@ class Engine:
         self.mouse_location = (0, 0)
         self.player = player
         self.turn_count = 0
-        self.show_instructions = True if len(meta.old_runs) < 10 else False
+        self.show_instructions = False
         self.meta = meta
         self.confirmed_in_combat = False
         self.difficulty = meta.difficulty
@@ -156,12 +156,10 @@ class Engine:
 
         self.game_map.render(console)
 
-        render_functions.render_dungeon_level(
+        render_functions.render_run_info(
             console=console,
-            dungeon_level=self.game_world.current_floor,
-            location=(76,0),
             turn_count = self.turn_count,
-            do_turn_count = self.do_turn_count
+            player=self.player
         )
 
         # MIDDLE PANEL

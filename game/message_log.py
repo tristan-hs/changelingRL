@@ -55,7 +55,7 @@ class MessageLog:
         `x`, `y`, `width`, `height` is the rectangular region to render onto
         the `console`.
         """
-        self.render_messages(console, x, y, width, height, self.messages)
+        self.render_messages(console, 61, 27, 18, 22, self.messages)
 
     @staticmethod
     def wrap(string: str, width: int) -> Iterable[str]:
@@ -105,12 +105,7 @@ class MessageLog:
                     last_turns.append(message.turn_count)
             mfg, afg = self.fade_colors(message.fg, message.arg_color, fade_count=fades)
 
-            if y_offset > 4:
-                lines = list(self.wrap(message.full_text, width+10))
-                if y_offset - len(lines) < 5:
-                    lines = list(self.wrap(message.full_text, width))
-            else:
-                lines = list(self.wrap(message.full_text, width))
+            lines = list(self.wrap(message.full_text, width))
 
             for line in reversed(lines):
                 if message.arg and i + len(line) > len(message.text.split('?')[1]) and arg_printed == False:

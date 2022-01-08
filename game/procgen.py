@@ -16,6 +16,14 @@ from game.game_map import GameMap
 if TYPE_CHECKING:
 	from game.engine import Engine
 
+def generate_dungeon(floor_number, map_width, map_height, engine):
+	pass
+
+
+"""
+================= OLD STUFF BELOW HERE ====================
+"""
+
 
 class RectangularRoom:
 	def __init__(self, x: int, y: int, x_dir: int, y_dir: int, map_width: int, map_height: int, rooms: List, room_max_size: int, room_min_size: int, door2: Tuple[int,int]):

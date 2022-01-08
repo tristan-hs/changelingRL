@@ -36,8 +36,8 @@ def new_game(meta) -> Engine:
         engine.log_run()
         meta = engine.meta
 
-    map_width = 76
-    map_height = 40
+    map_width = 60
+    map_height = 50
 
     player = copy.deepcopy(entity_factories.player)
     player.id = 0
@@ -59,7 +59,7 @@ def new_game(meta) -> Engine:
     engine.update_fov()
 
     engine.message_log.add_message(
-        "Welcome!", color.purple
+        "Welcome to 'Ling RL! Press ? for controls + info.", color.purple
     )
 
     return engine

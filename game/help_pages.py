@@ -14,8 +14,8 @@ moving = ("""
 .  $YKU   \\↑/$      .   num pad.
 .  $H.L = ← →$      .
 .  $BJN   /↓\\$      .   Press $.$ or $5$ to wait.
-.                 .
-.  $YU      \\/$     .   
+.                 .   
+.  $YU      \\/$     .   Bump into things for interaction options
 .   $HJKL =  ←↓↑→$  .  
 .  $BN      /\\$     .   
 .                 .   
