@@ -8,7 +8,7 @@ import numpy as np  # type: ignore
 import tcod
 
 from game.exceptions import Impossible
-from game.actions import Action, BumpAction, MeleeAction, MovementAction, WaitAction
+from game.actions import Action, BumpAction, MeleeAction, MovementAction, WaitAction, TalkAction
 from game import color
 from game.render_functions import DIRECTIONS
 
@@ -123,13 +123,17 @@ class DefaultNPC(BaseAI):
 
     def get_voice_lines(self,target):
         lines = []
+
+        if not target:
+            lines.append("Ha, I just had a great idea!")
+
         if self.target_tile:
             room = [room for room in self.entity.gamemap.rooms if self.target_tile in room.inner][0]
             lines.append(f"Excuse me, I've got to get to the {room.name}.")
         elif self.entity.room is self.entity.scheduled_room:
-            lines.append(f"Work, work, work, keeps m' hands busy.")
+            lines.append(f"Work, work, work, keeps my hands busy.")
 
-        if self.entity.room is not self.entity.scheduled_room:
+        if self.entity.room is not self.entity.scheduled_room and target:
             lines.append(f"Hello there, {target.name}!")
             lines.append(f"{target.name}! Good to see you.")
 
@@ -154,6 +158,10 @@ class DefaultNPC(BaseAI):
             d = (a.x-self.entity.x,a.y-self.entity.y)
             self._intent.append(BumpAction(self.entity, d[0], d[1]))
             return
+
+        # random chance to just muse as you go
+        if random.random() < self.chance_to_chat and random.random() < self.chance_to_chat:
+            self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y))
 
         # try to get where I'm supposed to be
         if self.target_tile:
@@ -182,9 +190,9 @@ class PeeNPC(DefaultNPC):
     def description(self):
         return "needs to pee"
 
-    def get_voice_lines(self, target):
+    def get_voice_lines(self, target=None):
         lines = []
-        if self.entity.xy == self.target_tile:
+        if self.entity.xy == self.target_tile and target:
             lines.append(f"Get out of here, {target}, I'm peeing!")
         elif self.target_tile:
             lines.append(f"I've gotta see a man about a horse.")
