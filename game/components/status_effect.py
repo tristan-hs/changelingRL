@@ -74,6 +74,8 @@ class Eating(ContingentStatusEffect):
 		self.engine.message_log.add_message(f"You have finished subsuming {self.contingent.name}.", color.dark_red)
 		self.contingent.die()
 
+		self.parent.morph_into(self.contingent)
+
 	def apply(self):
 		super().apply()
 		BeingEaten(self.contingent,self.parent)

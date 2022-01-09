@@ -130,6 +130,9 @@ class DefaultNPC(BaseAI):
         mp = []
         for e in self.entity.gamemap.entities:
             if not e.changeling_form and e.scheduled_room is self.entity.scheduled_room and e.room is not self.entity.scheduled_room and not self.entity.fov[e.x,e.y]:
+                p = self.entity.engine.player
+                if p.name == e.name and self.entity.fov[p.x,p.y]:
+                    continue
                 mp.append(e)
         return mp
 

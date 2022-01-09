@@ -14,6 +14,7 @@ from game import color as Color
 from game.components.inventory import Inventory
 from game.components import consumable
 from game.components.status_effect import Eating, BeingEaten
+from game.components.ai import Changeling, DefaultNPC
 
 from game.render_functions import DIRECTIONS
 
@@ -297,6 +298,7 @@ class Actor(Entity):
     def eat(self,target):
         if not self.changeling_form:
             self.changeling_form = True
+            self.ai = Changeling(self)
             self.engine.message_log("You ooze into your true form.", Color.changeling)
 
         if any(isinstance(i,Eating) and i.contingent != target for i in self.statuses):
@@ -315,6 +317,12 @@ class Actor(Entity):
         eat_status = [i for i in self.statuses if isinstance(i,Eating)]
         if len(eat_status):
             eat_status[0].cancel()
+
+    def morph_into(self,target):
+        self.schedule = target.schedule
+        self.name = target.name
+        self.changeling_form = False
+        self.ai = DefaultNPC(self)
 
 
 
