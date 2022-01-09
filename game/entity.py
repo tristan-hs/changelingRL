@@ -334,6 +334,7 @@ class Actor(Entity):
         self.name = target.name
         self.changeling_form = False
         self.ai = DefaultNPC(self)
+        self.bump_index = 1
 
         self.engine.message_log.add_message(
             "Your transformation is complete.", self.color

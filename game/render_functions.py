@@ -74,6 +74,12 @@ def render_run_info(
 
         for i in range(3):
             console.print(70,4+i,"TAB"[i],fg=color.black,bg=color.offwhite)
+    else:
+        console.draw_frame(70,3,9,5,fg=color.dark_red)
+        for i in range(6):
+            console.print(72,4+i,''.join([morph(a) for a in "EAT ←"]),fg=color.dark_red)
+        for i in range(3):
+            console.print(70,4+i,morph("EAT"[i]),fg=color.black,bg=color.dark_red)
 
     if not player.changeling_form:
         console.draw_frame(60,3,9,4)
