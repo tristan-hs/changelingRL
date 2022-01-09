@@ -8,7 +8,7 @@ from game.render_order import RenderOrder
 player = Actor(
     char="@",
     color=color.player,
-    name="You",
+    name="you",
     ai_cls=ai.Changeling,
     render_order=RenderOrder.PLAYER,
     description="That's you!"

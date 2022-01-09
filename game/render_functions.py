@@ -73,7 +73,10 @@ def render_run_info(
         sched = ''
         for i in times:
             k = f"0{i}" if i < 10 else i
-            sched += f"{k}:00 - {player.schedule[i].name}\n"
+            n = player.schedule[i].name
+            if len(n) > 10:
+                n = n[:8]+'..'
+            sched += f"{k}:00 - {n}\n"
         console.print(61,9,sched,color.grey)
 
     else:

@@ -1127,7 +1127,7 @@ class InspectHandler(AskUserEventHandler):
             self.frame_color = thing._color if hasattr(thing,'ai') else thing.color
             self.flavor = thing.flavor
 
-        self.frame_width = max(len(i) for i in (self.title, range(16)) if i is not None)+4
+        self.frame_width = max(len(i) for i in (self.title, range(19)) if i is not None)+4
         self.frame_x = 60-self.frame_width-1
         self.frame_y = 1
         self.parent = parent_handler
@@ -1143,7 +1143,7 @@ class InspectHandler(AskUserEventHandler):
         flavor = inner
 
         if hasattr(self.thing, 'ai'):
-            inner += 4
+            inner += 7
             inner += len(self.thing.statuses)
 
         return inner if inner != flavor else inner - 1
@@ -1170,13 +1170,25 @@ class InspectHandler(AskUserEventHandler):
             return
 
         if hasattr(self.thing, 'ai'):
-            #print schedule (for now)
+            # print ai descriptor
+            console.print(x,y,self.thing.ai.description,color.offwhite)
+            y += 1
+            # print statuses
+            for s in self.thing.statuses:
+                console.print(x,y,s.description,s.color)
+
+            y += 2 if len(self.thing.statuses) else 1
+
+            # print schedule (for now)
+            console.print(x,y,"SCHEDULE",color.offwhite)
+            y += 1
             sched = ''
             times = list(self.thing.schedule.keys())
             times.sort()
             for i in times:
                 k = f"0{i}" if i < 10 else i
-                sched += f"{k}:00 - {self.thing.schedule[i].name}\n"
+                n = self.thing.schedule[i].name
+                sched += f"{k}:00 - {n}\n"
             console.print(x,y,sched,color.grey)
 
             y += 4
