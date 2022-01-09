@@ -212,12 +212,17 @@ class Actor(Entity):
 
     @property
     def scheduled_room(self):
+        return self.schedule[self.time_block]
+
+    @property
+    def time_block(self):
         time_block = 0
         for k in self.schedule.keys():
             if k-1 <= self.engine.hour and k > time_block:
                 time_block = k
         time_block = 22 if time_block == 0 else time_block
-        return self.schedule[time_block]
+        return time_block
+
 
     def get_voice_line(self, target):
         return random.choice(self.ai.get_voice_lines(target))

@@ -121,13 +121,24 @@ class DefaultNPC(BaseAI):
     def description(self):
         return "content"
 
+    @property
+    def missing_persons(self):
+        if self.entity.xy not in self.entity.scheduled_room.tiles:
+            return []
+
+        mp = []
+        for e in self.entity.gamemap.entities:
+            if e.scheduled_room is self.entity.scheduled_room and e.room is not self.entity.scheduled_room and not self.entity.fov[e.x,e.y]:
+                mp.append(e)
+        return mp
+
     def get_voice_lines(self,target):
         lines = []
 
         if not target:
             lines.append("Ha, I just had a great idea!")
 
-        if self.target_tile:
+        if self.target_tile and self.entity.room is not self.entity.scheduled_room:
             room = [room for room in self.entity.gamemap.rooms if self.target_tile in room.inner][0]
             lines.append(f"Excuse me, I've got to get to the {room.name}.")
         elif self.entity.room is self.entity.scheduled_room:
@@ -136,6 +147,10 @@ class DefaultNPC(BaseAI):
         if self.entity.room is not self.entity.scheduled_room and target:
             lines.append(f"Hello there, {target.name}!")
             lines.append(f"{target.name}! Good to see you.")
+
+        for p in self.missing_persons:
+            lines.append(f"I wonder where {p.name} is.")
+            lines.append(f"{p.name} is usually here this time of day...")
 
         return lines
 
@@ -181,7 +196,6 @@ class DefaultNPC(BaseAI):
         # chill
         self._intent.append(WaitAction(self.entity))
 
-
 class PeeNPC(DefaultNPC):
     chance_to_chat = 0.1
     pee_duration = 10
@@ -192,8 +206,8 @@ class PeeNPC(DefaultNPC):
 
     def get_voice_lines(self, target=None):
         lines = []
-        if self.entity.xy == self.target_tile and target:
-            lines.append(f"Get out of here, {target}, I'm peeing!")
+        if self.entity.xy == self.target_tile:
+            lines = ["Get out of here!", "Occupied!", "Some privacy please!"]
         elif self.target_tile:
             lines.append(f"I've gotta see a man about a horse.")
         elif self.entity.room is self.entity.scheduled_room:
@@ -216,6 +230,10 @@ class PeeNPC(DefaultNPC):
     def decide(self):
         # wait if you're in the right place
         if self.entity.xy == self.target_tile:
+            for tile in self.entity.room.inner:
+                if any(entity.xy == tile and entity is not self.entity for entity in self.entity.gamemap.entities):
+                    self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y))
+                    break
             self._intent.append(WaitAction(self.entity))
             return
         # otherwise default stuff will get you there
