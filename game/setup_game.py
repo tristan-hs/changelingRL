@@ -62,7 +62,7 @@ def new_game(meta) -> Engine:
     engine.update_fov()
 
     rch = random.choice(["splorch","splurch","lurch","splash","schlop","shlorp","splosh"])
-    for i in [f"You {rch} up from the plumbing, catching a lone human unawares. Now's your chance!","...","Press ? for controls + info."]:
+    for i in [f"You {rch} up from the plumbing, catching a lone human unawares. Now's your chance!","...","Press ? for controls + info.","..."]:
         if i[0] == 'Y':
             c = color.offwhite
         elif i[0] == '.':
