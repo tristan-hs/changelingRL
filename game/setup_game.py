@@ -7,6 +7,7 @@ import lzma
 import pickle
 import traceback
 from typing import Optional
+import random
 
 import tcod
 
@@ -60,9 +61,17 @@ def new_game(meta) -> Engine:
     engine.game_world.generate_floor()
     engine.update_fov()
 
-    engine.message_log.add_message(
-        "Welcome to 'Ling RL! Press ? for controls + info.", color.purple
-    )
+    rch = random.choice(["splorch","splurch","lurch","splash","schlop","shlorp","splosh"])
+    for i in [f"You {rch} up from the plumbing, catching a lone human unawares. Now's your chance!","...","Press ? for controls + info."]:
+        if i[0] == 'Y':
+            c = color.offwhite
+        elif i[0] == '.':
+            c = color.black
+        else:
+            c = color.purple
+        engine.message_log.add_message(
+            i, c
+        )
 
     return engine
 
