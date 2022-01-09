@@ -142,7 +142,8 @@ class DefaultNPC(BaseAI):
             room = [room for room in self.entity.gamemap.rooms if self.target_tile in room.inner][0]
             lines.append(f"Excuse me, I've got to get to the {room.name}.")
         elif self.entity.room is self.entity.scheduled_room:
-            lines.append(f"Work, work, work, keeps my hands busy.")
+            pass
+            #lines.append(f"Work, work, work, keeps my hands busy.")
 
         if self.entity.room is not self.entity.scheduled_room and target:
             lines.append(f"Hello there, {target.name}!")

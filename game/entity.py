@@ -225,7 +225,8 @@ class Actor(Entity):
 
 
     def get_voice_line(self, target):
-        return random.choice(self.ai.get_voice_lines(target))
+        vls = self.ai.get_voice_lines(target)
+        return random.choice(vls) if vls else None
 
     def can_move(self):
         # Make sure player can move, otherwise die    

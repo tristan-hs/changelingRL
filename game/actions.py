@@ -154,9 +154,11 @@ class TalkAction(ActionWithDirection):
             target = None
 
         if self.entity.fov[self.engine.player.x,self.engine.player.y]:
-            self.engine.message_log.add_message(
-                f"?: "+self.entity.get_voice_line(target), color.offwhite, self.entity.label, self.entity.color
-            )
+            vl = self.entity.get_voice_line(target)
+            if vl:
+                self.engine.message_log.add_message(
+                    f"?: "+vl, color.offwhite, self.entity.label, self.entity.color
+                )
 
 
 class BumpAction(ActionWithDirection):

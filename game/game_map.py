@@ -47,6 +47,7 @@ class GameMap:
 
         if self.game_mode == 'overview':
             self.explored = np.full((width,height),fill_value=True,order="F")
+            self.visible = np.full((width,height),fill_value=True,order="F")
 
     def room_at_location(self,x,y):
         for room in self.rooms:
