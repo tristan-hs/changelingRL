@@ -20,23 +20,30 @@ D_ARROWS = ['↑', '↓', '\\', '←', '/', '/','→','\\']
 D_KEYS = ['K','J','Y','H','B','U','L','N']
 ALPHA_CHARS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
 
-def morph(s,f=0.1):
-    if random.random()<f:
-        return s.upper()
-    if random.random()<f:
-        return s.lower()
-    if random.random()<f/2:
-        return '@'
-    if random.random()<f:
-        return random.choice(['~','`','☺','☻','♂','♀','►','↕','¶','§','æ','¿','¼','⌐','¬','Θ','φ','²'])
-    if random.random()<f/2:
-        return random.choice(['▬','«','░','▒','▓','╖','╣','╛','╬','█','▄','▌','▐','▀','■'])
-    return s
-
-
 def render_run_info(
     console: Console, turn_count: int, player
 ) -> None:
+
+    random.seed(turn_count*player.x*player.y)
+
+    def morph(s,f=0.1):
+
+        if s == '\n':
+            return s
+        if random.random()<f:
+            return s.upper()
+        if random.random()<f:
+            return s.lower()
+        if random.random()<f/2:
+            return '@'
+        if random.random()<f:
+            return random.choice(['~','`','☺','☻','♂','♀','►','↕','¶','§','æ','¿','¼','⌐','¬','Θ','φ','²'])
+        if random.random()<f/2:
+            return random.choice(['▬','«','░','▒','▓','╖','╣','╛','╬','█','▄','▌','▐','▀','■'])
+        return s
+
+
+
     """
     Render the level the player is currently on, at the given location.
     """
@@ -44,7 +51,7 @@ def render_run_info(
 
     # render day x + clock time
 
-    day = math.floor(turn_count / 480)
+    day = math.floor(turn_count / 480)+1
     day = f"{day}" if day > 9 else f"0{day}"
 
     hour = math.floor(turn_count/20) % 24
@@ -53,16 +60,26 @@ def render_run_info(
     minute = (turn_count*3) % 60
     minute = f"{minute}" if minute > 9 else f"0{minute}"
 
-    console.print(66,1,f"{hour}:{minute}, day {day}")
+    console.print(70,1,f"{hour}:{minute}")
+    console.print(60,1,f"Day {day}")
+
+    
+    if not player.changeling_form:
+        console.draw_frame(70,3,9,5,fg=color.offwhite)
+        console.print(72,4,"EAT  ←",fg=color.offwhite)
+        console.print(72,5,"TALK",fg=color.grey)
+
+        for i in range(3):
+            console.print(70,4+i,"TAB"[i],fg=color.black,bg=color.offwhite)
 
     if not player.changeling_form:
-        console.draw_frame(60,3,20,4)
+        console.draw_frame(60,3,9,4)
         console.print_box(61,3,2,1,"ID")
-        console.print_box(61,4,18,2,player.name,fg=player.color)
+        console.print_box(61,4,7,2,player.name,fg=player.color)
     else:
-        name = "THE CHANGELING"
+        console.draw_frame(60,3,12,4,fg=color.changeling)
+        name = "changeling\n░░░░░░░░░░"
         name = ''.join([morph(a) for a in name])
-
         console.print(61,4,name,fg=color.changeling)
 
     if not player.changeling_form:
@@ -87,7 +104,7 @@ def render_run_info(
         n = "SCHEDULE"
         console.print_box(61,8,8,1,n,fg=c)
         for i in range(4):
-            n = 'eateateateateateat'
+            n = 'eateateateateateat'.upper()
             if random.random()<0.05:
                 n += 'e'
             x = 59 if random.random()<0.05 else 61

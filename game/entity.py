@@ -199,6 +199,7 @@ class Actor(Entity):
         self.cause_of_death = ''
         self.schedule = {}
         self.changeling_form = False
+        self.bump_to_talk = True
 
     @property
     def color(self):
