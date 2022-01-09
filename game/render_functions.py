@@ -66,8 +66,11 @@ def render_run_info(
     
     if not player.changeling_form:
         console.draw_frame(70,3,9,5,fg=color.offwhite)
-        console.print(72,4,"EAT  ←",fg=color.offwhite)
-        console.print(72,5,"TALK",fg=color.grey)
+        for i,b in enumerate(player.bumps):
+            c = color.offwhite if i == player.bump_index else color.grey
+            a = ' ←' if i == player.bump_index else ''
+            s = ' ' if b == 'EAT' else ''
+            console.print(72,4+i,f"{b}{s}{a}",fg=c)
 
         for i in range(3):
             console.print(70,4+i,"TAB"[i],fg=color.black,bg=color.offwhite)
@@ -104,7 +107,7 @@ def render_run_info(
         n = "SCHEDULE"
         console.print_box(61,8,8,1,n,fg=c)
         for i in range(4):
-            n = 'eateateateateateat'.upper()
+            n = 'eateateateateateat'
             if random.random()<0.05:
                 n += 'e'
             x = 59 if random.random()<0.05 else 61

@@ -251,7 +251,8 @@ class MainGameEventHandler(EventHandler):
             return LookHandler(self.engine)
 
         elif key == tcod.event.K_TAB:
-            return LookHandler(self.engine,True)
+            if not self.engine.player.changeling_form:
+                self.engine.player.cycle_bump()
 
         elif key == tcod.event.K_c:
             self.engine.show_instructions = not self.engine.show_instructions

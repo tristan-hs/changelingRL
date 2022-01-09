@@ -199,7 +199,8 @@ class Actor(Entity):
         self.cause_of_death = ''
         self.schedule = {}
         self.changeling_form = False
-        self.bump_to_talk = True
+        self.bumps = ['EAT','TALK']
+        self.bump_index = 1
 
     @property
     def color(self):
@@ -208,6 +209,15 @@ class Actor(Entity):
     @color.setter
     def color(self, new_val):
         self._color = new_val
+
+    @property
+    def bump(self):
+        return self.bumps[self.bump_index]
+
+    def cycle_bump(self):
+        self.bump_index += 1
+        if self.bump_index >= len(self.bumps):
+            self.bump_index = 0
 
     @property
     def is_alive(self) -> bool:
@@ -300,7 +310,7 @@ class Actor(Entity):
         if not self.changeling_form:
             self.changeling_form = True
             self.ai = Changeling(self)
-            self.engine.message_log("You ooze into your true form.", Color.changeling)
+            self.engine.message_log.add_message("You ooze into your true form.", Color.changeling)
 
         if any(isinstance(i,Eating) and i.contingent != target for i in self.statuses):
             self.cancel_eat()

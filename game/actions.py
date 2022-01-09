@@ -176,7 +176,10 @@ class BumpAction(ActionWithDirection):
             self.meleed = True
 
             if self.entity is self.engine.player and not self.entity.changeling_form:
-                raise exceptions.PickBumpType(f"Do what to {self.blocking_entity.name}?")
+                if self.entity.bumps[self.entity.bump_index] == 'EAT':
+                    return EatAction(self.entity,self.dx,self.dy).perform()
+                else:
+                    return TalkAction(self.entity,self.dx,self.dy).perform()
             elif self.entity is self.engine.player:
                 return EatAction(self.entity, self.dx, self.dy).perform()
 
