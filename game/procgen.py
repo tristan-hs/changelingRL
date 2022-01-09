@@ -13,6 +13,7 @@ from game.entity import Item
 from game import entity_factories, tile_types
 from game.game_map import GameMap
 from game.render_functions import DIRECTIONS
+from game.components.ai import PeeNPC
 
 if TYPE_CHECKING:
 	from game.engine import Engine
@@ -247,11 +248,24 @@ def generate_dungeon(floor_number, map_width, map_height, engine, game_mode, ite
 			room.add_closet()
 			break
 	
-	place_player(dungeon,hall.center,engine.player)
+	toilets = [room for room in dungeon.rooms if room.closet]
+	if not toilets:
+		return generate_dungeon(floor_number,map_width,map_height,engine,game_mode,items)
+
+	starting_toilet = random.choice(toilets)
+	place_player(dungeon,random.choice(starting_toilet.inner),engine.player)
+
+	toilet_tiles = starting_toilet.inner
+	random.shuffle(toilet_tiles)
+	for tile in toilet_tiles:
+		if tile != dungeon.engine.player.xy:
+			npc = entity_factories.NPC.spawn(dungeon,*tile)
+			npc.ai = PeeNPC(npc)
+			break
 
 	NPC_number = random.choice(range(8,14))
 	for i in range(NPC_number):
-		room = random.choice(dungeon.rooms)
+		room = random.choice([room for room in dungeon.rooms if dungeon.engine.player.room is not room])
 		tiles = room.inner
 		random.shuffle(tiles)
 		for tile in tiles:
@@ -260,11 +274,12 @@ def generate_dungeon(floor_number, map_width, map_height, engine, game_mode, ite
 			entity_factories.NPC.spawn(dungeon,*tile)
 			break
 
-	return dungeon if any(room.closet for room in dungeon.rooms) else generate_dungeon(floor_number,map_width,map_height,engine,game_mode,items)
+	return dungeon
 
 def place_player(dungeon,xy,player):
 	player.place(*xy,dungeon)
 	player.generateSchedule()
+	player.changeling_form = True
 
 """
 ================= OLD STUFF BELOW HERE ====================

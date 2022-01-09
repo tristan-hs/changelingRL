@@ -196,6 +196,7 @@ class Actor(Entity):
         self.statuses = []
         self.cause_of_death = ''
         self.schedule = {}
+        self.changeling_form = False
 
     @property
     def color(self):

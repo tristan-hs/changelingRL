@@ -247,7 +247,7 @@ class PeeNPC(DefaultNPC):
         for toilet in toilets:
             def occupied():
                 for tile in toilet.inner:
-                    if any(entity.xy == tile for entity in self.entity.gamemap.entities):
+                    if any(entity.xy == tile and not entity.changeling_form and entity is not self.entity for entity in self.entity.gamemap.entities):
                         return True
             if occupied():
                 continue

@@ -43,6 +43,7 @@ def new_game(meta) -> Engine:
     player.id = 0
 
     engine = Engine(player=player, meta=meta)
+    engine.turn_count = 240
 
     game_mode = 'default'
     # game_mode = 'overview'
