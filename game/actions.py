@@ -150,9 +150,11 @@ class MeleeAction(ActionWithDirection):
 class TalkAction(ActionWithDirection):
     def perform(self) -> None:
         target = self.blocking_entity
-        self.engine.message_log.add_message(
-            f"?: Hello there, {target.name}!", color.offwhite, self.entity.label, self.entity.color
-        )
+
+        if self.entity.fov[self.engine.player.x,self.engine.player.y]:
+            self.engine.message_log.add_message(
+                f"?: "+self.entity.get_voice_line(target), color.offwhite, self.entity.label, self.entity.color
+            )
 
 
 class BumpAction(ActionWithDirection):

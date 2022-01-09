@@ -55,10 +55,19 @@ class Entity:
         self.render_order = render_order
         self._description=description
         self._flavor = flavor
+        self.fov_radius = 8
         if parent:
             # If parent isn't provided now then it will be set later.
             self.parent = parent
             parent.entities.add(self)
+
+    @property
+    def fov(self):
+        return compute_fov(
+            self.engine.game_map.tiles["transparent"],
+            (self.x, self.y),
+            radius=self.fov_radius
+        )
 
     @property
     def char(self):
@@ -210,6 +219,9 @@ class Actor(Entity):
         time_block = 22 if time_block == 0 else time_block
         return self.schedule[time_block]
 
+    def get_voice_line(self, target):
+        return random.choice(self.ai.get_voice_lines(target))
+
     def can_move(self):
         # Make sure player can move, otherwise die    
         for direction in DIRECTIONS:
@@ -260,15 +272,19 @@ class Actor(Entity):
         if self.char == "?":
             self.char = self.name[0]
         if not self.schedule:
-            times = {8,12,18,22}
-            schedule = {}
-            for time in times:
-                location = random.choice(self.gamemap.rooms)
-                while location.name == "Main Hall" or location.closet or location in schedule.values():
-                    location = random.choice(self.gamemap.rooms)
-                schedule[time] = location
-            self.schedule = schedule
+            self.generateSchedule()
         self.last_peed = random.choice(range(240))
+
+    def generateSchedule(self):
+        times = {8,12,18,22}
+        schedule = {}
+        for time in times:
+            location = random.choice(self.gamemap.rooms)
+            while location.name == "Main Hall" or location.closet or location in schedule.values():
+                location = random.choice(self.gamemap.rooms)
+            schedule[time] = location
+        self.schedule = schedule
+
 
 
 class Item(Entity):

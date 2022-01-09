@@ -121,6 +121,20 @@ class DefaultNPC(BaseAI):
     def description(self):
         return "content"
 
+    def get_voice_lines(self,target):
+        lines = []
+        if self.target_tile:
+            room = [room for room in self.entity.gamemap.rooms if self.target_tile in room.inner][0]
+            lines.append(f"Excuse me, I've got to get to the {room.name}.")
+        elif self.entity.room is self.entity.scheduled_room:
+            lines.append(f"Work, work, work, keeps m' hands busy.")
+
+        if self.entity.room is not self.entity.scheduled_room:
+            lines.append(f"Hello there, {target.name}!")
+            lines.append(f"{target.name}! Good to see you.")
+
+        return lines
+
     def set_goals(self):
         # make sure I'm in the right mode
         if self.engine.turn_count - self.entity.last_peed > 240:
@@ -167,6 +181,18 @@ class PeeNPC(DefaultNPC):
     @property
     def description(self):
         return "needs to pee"
+
+    def get_voice_lines(self, target):
+        lines = []
+        if self.entity.xy == self.target_tile:
+            lines.append(f"Get out of here, {target}, I'm peeing!")
+        elif self.target_tile:
+            lines.append(f"I've gotta see a man about a horse.")
+        elif self.entity.room is self.entity.scheduled_room:
+            lines.append(f"Think I'll take a break soon")
+
+        return lines + super().get_voice_lines(target)
+
 
     def set_goals(self):
         if self.entity.xy == self.target_tile:
