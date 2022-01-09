@@ -20,6 +20,20 @@ D_ARROWS = ['↑', '↓', '\\', '←', '/', '/','→','\\']
 D_KEYS = ['K','J','Y','H','B','U','L','N']
 ALPHA_CHARS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
 
+def morph(s,f=0.1):
+    if random.random()<f:
+        return s.upper()
+    if random.random()<f:
+        return s.lower()
+    if random.random()<f/2:
+        return '@'
+    if random.random()<f:
+        return random.choice(['~','`','☺','☻','♂','♀','►','↕','¶','§','æ','¿','¼','⌐','¬','Θ','φ','²'])
+    if random.random()<f/2:
+        return random.choice(['▬','«','░','▒','▓','╖','╣','╛','╬','█','▄','▌','▐','▀','■'])
+    return s
+
+
 def render_run_info(
     console: Console, turn_count: int, player
 ) -> None:
@@ -41,19 +55,59 @@ def render_run_info(
 
     console.print(66,1,f"{hour}:{minute}, day {day}")
 
-    console.draw_frame(60,3,20,4)
-    console.print_box(61,3,2,1,"ID")
-    console.print_box(61,4,18,2,"John Doe\nFurnace Operator",fg=player.color)
+    if not player.changeling_form:
+        console.draw_frame(60,3,20,4)
+        console.print_box(61,3,2,1,"ID")
+        console.print_box(61,4,18,2,player.name,fg=player.color)
+    else:
+        name = "THE CHANGELING"
+        name = ''.join([morph(a) for a in name])
 
-    console.draw_frame(60,8,20,6)
-    console.print_box(61,8,8,1,"SCHEDULE")
-    console.print_box(61,9,18,4,"07:00 - Dining H.\n12:00 - Workshop\n18:00 - Deli\n22:00 - Bunks",fg=color.grey)
+        console.print(61,4,name,fg=color.changeling)
 
-    console.draw_frame(60,15,20,10)
-    console.print_box(61,15,12,1,"SURROUNDINGS")
+    if not player.changeling_form:
+        console.draw_frame(60,8,20,6)
+        console.print_box(61,8,8,1,"SCHEDULE")
+        times = list(player.schedule.keys())
+        times.sort()
+        sched = ''
+        for i in times:
+            k = f"0{i}" if i < 10 else i
+            sched += f"{k}:00 - {player.schedule[i].name}\n"
+        console.print(61,9,sched,color.grey)
 
-    console.draw_frame(60,26,20,24)
-    console.print_box(61,26,3,1, "LOG")
+    else:
+        c = color.changeling
+        if random.random()<0.05:
+            c = color.dark_red
+        console.draw_frame(60,8,20,6,fg=c)
+        n = "SCHEDULE"
+        console.print_box(61,8,8,1,n,fg=c)
+        for i in range(4):
+            n = 'eateateateateateat'
+            if random.random()<0.05:
+                n += 'e'
+            x = 59 if random.random()<0.05 else 61
+            n = ''.join([morph(a) for a in n])
+            console.print(x,9+i,n,color.dark_red)
+
+    if not player.changeling_form:
+        console.draw_frame(60,15,20,10)
+        console.print_box(61,15,12,1,"SURROUNDINGS")
+    else:
+        c = color.dark_red if random.random() < 0.05 else color.changeling
+        console.draw_frame(60,15,20,10,fg=c)
+        n = "SURROUNDINGS"
+        console.print_box(61,15,12,1,n)
+
+    if not player.changeling_form:
+        console.draw_frame(60,26,20,24)
+        console.print_box(61,26,3,1, "LOG")
+    else:
+        c = color.dark_red if random.random() < 0.05 else color.changeling
+        console.draw_frame(60,26,20,24,fg=c)
+        n = "LOG"
+        console.print_box(61,26,len(n),1,n)
 
 def render_instructions(console: Console, location: Tuple[int,int]) -> None:
     pass

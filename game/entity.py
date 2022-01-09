@@ -324,6 +324,10 @@ class Actor(Entity):
         self.changeling_form = False
         self.ai = DefaultNPC(self)
 
+        self.engine.message_log.add_message(
+            "Your transformation is complete.", self.color
+        )
+
 
 
 class Item(Entity):
