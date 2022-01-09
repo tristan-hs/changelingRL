@@ -45,6 +45,8 @@ highlighted_intent_bg = (200,200,0)
 highlighted_fov = (0,20,20)
 highlighted_fom = (50,50,0)
 
+
+changeling = (255,173,201)
 player = (0,200,0)
 player_dark = (0,100,0)
 

@@ -278,7 +278,6 @@ def generate_dungeon(floor_number, map_width, map_height, engine, game_mode, ite
 
 def place_player(dungeon,xy,player):
 	player.place(*xy,dungeon)
-	player.generateSchedule()
 	player.changeling_form = True
 
 """

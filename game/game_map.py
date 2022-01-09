@@ -212,7 +212,7 @@ class GameMap:
             if not self.tiles['walkable'][item.x,item.y]:
                 fg = color.purple
             elif self.visible[item.x,item.y]:
-                fg = color.player
+                fg = item.color
             else:
                 fg = color.player_dark
         elif not self.visible[item.x,item.y] and self.explored[item.x,item.y]:

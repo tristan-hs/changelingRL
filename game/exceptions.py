@@ -17,3 +17,6 @@ class ToggleFullscreen(Exception):
 
 class QuitToMenu(Exception):
 	"""Quit from game to main menu"""
+
+class PickBumpType(Exception):
+	"""Player needs to pick what happens when they bump"""

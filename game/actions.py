@@ -147,6 +147,15 @@ class MeleeAction(ActionWithDirection):
                 f"{attack_desc} But it does no damage.", color.offwhite
             )
 
+class EatAction(ActionWithDirection):
+    def perform(self) -> None:
+        target = self.blocking_entity
+        if not target:
+            raise exceptions.Impossible("Nothing to eat.")
+        self.entity.eat(target)
+
+
+
 class TalkAction(ActionWithDirection):
     def perform(self) -> None:
         target = self.blocking_entity
@@ -165,6 +174,12 @@ class BumpAction(ActionWithDirection):
     def perform(self) -> None:
         if self.blocking_entity:
             self.meleed = True
+
+            if self.entity is self.engine.player and not self.entity.changeling_form:
+                raise exceptions.PickBumpType(f"Do what to {self.blocking_entity}?")
+            elif self.entity is self.engine.player:
+                return EatAction(self.entity, self.dx, self.dy).perform()
+
             return TalkAction(self.entity, self.dx, self.dy).perform()
 
         return MovementAction(self.entity, self.dx, self.dy).perform()
@@ -173,16 +188,12 @@ class BumpAction(ActionWithDirection):
 class MovementAction(ActionWithDirection):
     def perform(self) -> None:
         if self.entity is self.engine.player:
-            if not self.engine.game_map.tile_is_walkable(*self.dest_xy):
-                raise exceptions.Impossible("That way is blocked.")
+            self.entity.cancel_eat()
 
-            self.entity.move(self.dx,self.dy)
+        if not self.engine.game_map.tile_is_walkable(*self.dest_xy):
+            raise exceptions.Impossible("That way is blocked.")
 
-        else:
-            if not self.engine.game_map.tile_is_walkable(*self.dest_xy):
-                raise exceptions.Impossible("That way is blocked.")
-
-            self.entity.move(self.dx,self.dy)
+        self.entity.move(self.dx,self.dy)
 
 
 class WaitAction(Action):

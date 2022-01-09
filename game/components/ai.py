@@ -11,6 +11,7 @@ from game.exceptions import Impossible
 from game.actions import Action, BumpAction, MeleeAction, MovementAction, WaitAction, TalkAction
 from game import color
 from game.render_functions import DIRECTIONS
+from game.components.status_effect import BeingEaten
 
 if TYPE_CHECKING:
     from game.entity import Actor
@@ -128,7 +129,7 @@ class DefaultNPC(BaseAI):
 
         mp = []
         for e in self.entity.gamemap.entities:
-            if e.scheduled_room is self.entity.scheduled_room and e.room is not self.entity.scheduled_room and not self.entity.fov[e.x,e.y]:
+            if not e.changeling_form and e.scheduled_room is self.entity.scheduled_room and e.room is not self.entity.scheduled_room and not self.entity.fov[e.x,e.y]:
                 mp.append(e)
         return mp
 
@@ -157,6 +158,9 @@ class DefaultNPC(BaseAI):
 
     def set_goals(self):
         # make sure I'm in the right mode
+        if any(isinstance(i,BeingEaten) for i in self.entity.statuses):
+            return BeingEatenNPC(self.entity)
+
         if self.engine.turn_count - self.entity.last_peed > 240:
             return PeeNPC(self.entity)
 
@@ -197,6 +201,49 @@ class DefaultNPC(BaseAI):
         # chill
         self._intent.append(WaitAction(self.entity))
 
+class Changeling(DefaultNPC):
+    @property
+    def description(self):
+        return "hungry"
+
+    @property
+    def missing_persons(self):
+        return []
+
+    def get_voice_lines(self):
+        if not self.changeling_form:
+            return super().get_voice_lines()
+        else:
+            return ["Rlyxhheehhhxxxsss","SSSLlslllLLlLlurRRRRP", "hhhh", "*schlorp*", "..."]
+
+    def set_goals(self):
+        return self
+
+    def decide(self):
+        return
+
+
+class BeingEatenNPC(DefaultNPC):
+    chance_to_chat=1
+
+    @property
+    def description(self):
+        return "struggling"
+
+    def get_voice_lines(self,target=None):
+        return ["Mmffhh!!!","Hrrmlllp!","*muffled sobs*"]
+
+    def set_goals(self):
+        if not any(isinstance(i,BeingEaten) for i in self.entity.statuses):
+            return DefaultNPC(self.entity)
+        return self
+            #todo: panicked NPC when ready
+
+    def decide(self):
+        self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y))
+        self._intent.append(WaitAction(self.entity))
+
+
 class PeeNPC(DefaultNPC):
     chance_to_chat = 0.1
     pee_duration = 10
@@ -218,6 +265,10 @@ class PeeNPC(DefaultNPC):
 
 
     def set_goals(self):
+        # make sure I'm in the right mode
+        if any(isinstance(i,BeingEaten) for i in self.entity.statuses):
+            return BeingEatenNPC(self.entity)
+
         if self.entity.xy == self.target_tile:
             self.pee_duration -= 1
             if self.pee_duration < 1:

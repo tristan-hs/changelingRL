@@ -9,7 +9,7 @@ player = Actor(
     char="@",
     color=color.player,
     name="You",
-    ai_cls=ai.DefaultNPC,
+    ai_cls=ai.Changeling,
     render_order=RenderOrder.PLAYER,
     description="That's you!"
 )

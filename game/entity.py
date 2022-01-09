@@ -13,6 +13,7 @@ from game import color as Color
 
 from game.components.inventory import Inventory
 from game.components import consumable
+from game.components.status_effect import Eating, BeingEaten
 
 from game.render_functions import DIRECTIONS
 
@@ -200,7 +201,7 @@ class Actor(Entity):
 
     @property
     def color(self):
-        return self._color
+        return self._color if not self.changeling_form and not self.being_eaten else Color.changeling
 
     @color.setter
     def color(self, new_val):
@@ -210,6 +211,10 @@ class Actor(Entity):
     def is_alive(self) -> bool:
         """Returns True as long as this actor can perform actions."""
         return bool(self.ai)
+
+    @property
+    def being_eaten(self) -> bool:
+        return len([i for i in self.statuses if isinstance(i,BeingEaten)]) > 0
 
     @property
     def scheduled_room(self):
@@ -258,17 +263,14 @@ class Actor(Entity):
             self.name = f"remains of {self.name}"
             self.render_order = RenderOrder.CORPSE
         else:
-            death_message = f"{self.name} is dead!"
-            death_message_color = Color.dark_red
-
             self.engine.history.append(("kill enemy",self.name,self.engine.turn_count))
 
             if self in self.gamemap.entities:
-                self.gamemap.entities.remove(self)
+                self.ai = None
+                self.x=0
+                self.y=0
 
             self.corpse()
-
-        self.engine.message_log.add_message(death_message, death_message_color)
 
     def take_damage(self, amount: int) -> None:
         self.die()
@@ -291,6 +293,28 @@ class Actor(Entity):
                 location = random.choice(self.gamemap.rooms)
             schedule[time] = location
         self.schedule = schedule
+
+    def eat(self,target):
+        if not self.changeling_form:
+            self.changeling_form = True
+            self.engine.message_log("You ooze into your true form.", Color.changeling)
+
+        if any(isinstance(i,Eating) and i.contingent != target for i in self.statuses):
+            self.cancel_eat()
+
+        if any(isinstance(i,Eating) and i.contingent == target for i in self.statuses):
+            return
+
+        Eating(self,target)
+
+        self.engine.message_log.add_message(
+            f"You begin to subsume ?.", Color.changeling, target.name, target.color
+        )
+
+    def cancel_eat(self):
+        eat_status = [i for i in self.statuses if isinstance(i,Eating)]
+        if len(eat_status):
+            eat_status[0].cancel()
 
 
 

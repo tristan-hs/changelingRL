@@ -16,15 +16,10 @@ class StatusEffect(BaseComponent):
 	base_duration = 10
 	base_strengthen_duration = 10
 
-	def __init__(self, modifier: int, target):
+	def __init__(self, target):
 		self.parent = target
-		self._duration_mod = modifier
-		self.duration = self.base_duration+self.duration_mod
+		self.duration = self.base_duration
 		self.apply()
-
-	@property
-	def duration_mod(self):
-		return self._duration_mod
 
 	def decrement(self):
 		self.duration -= 1
@@ -55,3 +50,42 @@ class BadStatusEffect(StatusEffect):
 class EnemyStatusEffect(StatusEffect):
 	pass
 
+
+class ContingentStatusEffect(StatusEffect):
+	def __init__(self,target,other):
+		self.contingent=other
+		super().__init__(target)
+
+class Eating(ContingentStatusEffect):
+	base_duration=3
+	color=color.changeling
+
+	@property
+	def description(self):
+		return f"subsuming {self.contingent.name}"
+
+	def cancel(self):
+		super().remove()
+		eat_status = [i for i in self.contingent.statuses if isinstance(i,BeingEaten)][0]
+		eat_status.remove()
+
+	def remove(self):
+		self.parent.statuses.remove(self)
+		self.engine.message_log.add_message(f"You have finished subsuming {self.contingent.name}.", color.dark_red)
+		self.contingent.die()
+
+	def apply(self):
+		super().apply()
+		BeingEaten(self.contingent,self.parent)
+
+
+class BeingEaten(ContingentStatusEffect):
+	base_duration=5
+	color=color.changeling
+
+	@property
+	def description(self):
+		return f"being subsumed by {self.contingent.name}"
+
+	def remove(self):
+		self.parent.statuses.remove(self)
