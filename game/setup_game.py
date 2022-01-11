@@ -37,7 +37,7 @@ def new_game(meta) -> Engine:
         engine.log_run()
         meta = engine.meta
 
-    map_width = 60
+    map_width = 57
     map_height = 50
 
     player = copy.deepcopy(entity_factories.player)

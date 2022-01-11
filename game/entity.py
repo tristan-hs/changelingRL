@@ -201,6 +201,8 @@ class Actor(Entity):
         self.changeling_form = False
         self.bumps = ['EAT','TALK']
         self.bump_index = 1
+        self.max_vigor = 48
+        self.vigor = 48
 
     @property
     def color(self):

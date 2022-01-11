@@ -60,8 +60,8 @@ def render_run_info(
     minute = (turn_count*3) % 60
     minute = f"{minute}" if minute > 9 else f"0{minute}"
 
-    console.print(70,1,f"{hour}:{minute}")
-    console.print(60,1,f"Day {day}")
+    console.print(71,1,f"{hour}:{minute}")
+    console.print(61,1,f"Day {day}")
 
     
     if not player.changeling_form:
@@ -135,8 +135,24 @@ def render_run_info(
     else:
         c = color.dark_red if random.random() < 0.05 else color.changeling
         console.draw_frame(60,26,20,24,fg=c)
-        n = "LOG"
-        console.print_box(61,26,len(n),1,n)
+        console.print_box(61,26,3,1,"LOG")
+
+    c = color.changeling if player.changeling_form else color.offwhite
+    console.draw_frame(57,0,3,50,fg=c)
+
+    y = 49-player.vigor
+    v = player.vigor
+
+    c = color.dark_red if v < 25 else color.changeling
+    if not player.changeling_form and v == 48:
+        c = color.offwhite
+
+    console.print_box(58,y,1,v,"█\n"*v,fg=c)
+
+    for k,i in enumerate("VIGOR"):
+        c1 = c if v <= 5-k else color.black
+        c2 = color.black if v <= 5-k else c
+        console.print(58,44+k,i,fg=c1,bg=c2)
 
 def render_instructions(console: Console, location: Tuple[int,int]) -> None:
     pass

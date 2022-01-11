@@ -124,3 +124,5 @@ class MessageLog:
                     return  # No more space to print messages.
                 i += len(line)+1
             y_offset -= 1
+            if y_offset < 0:
+                return
