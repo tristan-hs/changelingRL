@@ -45,7 +45,7 @@ class BaseAI(Action):
     def perform(self) -> None:
         self._intent = []
 
-        ai = self.set_goals()
+        ai = self.override or self.resolve or self
         if ai != self:
             self.entity.ai = ai
             return ai.perform()
@@ -112,11 +112,12 @@ class BaseAI(Action):
 class DefaultNPC(BaseAI):
     chance_to_chat = 0.2
 
-    def __init__(self, entity: Actor):
+    def __init__(self, entity: Actor, parent=None):
         super().__init__(entity)
         self.path = None
         self.move_speed = entity.move_speed
         self.target_tile = None
+        self.parent = parent
 
     @property
     def description(self):
@@ -135,6 +136,43 @@ class DefaultNPC(BaseAI):
                     continue
                 mp.append(e)
         return mp
+
+    # AI PRIORITIES ===========================
+
+    @property
+    def is_being_eaten(self):
+        return any(isinstance(i,BeingEaten) for i in self.entity.statuses)
+
+    @property
+    def panicking(self):
+        return False
+
+    @property
+    def has_to_pee(self):
+        return self.engine.turn_count - self.entity.last_peed > 240
+
+    @property
+    def override(self):
+        if self.is_being_eaten:
+            return BeingEatenNPC(self.entity,self)
+        if self.panicking:
+            return
+        if self.has_to_pee:
+            return PeeNPC(self.entity,self)
+
+    @property
+    def resolve(self):
+        return self
+
+    def decide(self):
+        # decide on my target
+        if self.entity.room is not self.entity.scheduled_room and not self.target_tile:
+            self.target_tile = random.choice(self.entity.scheduled_room.inner)
+
+        self.mosey()
+
+    # ========================================
+
 
     def get_voice_lines(self,target):
         lines = []
@@ -159,21 +197,7 @@ class DefaultNPC(BaseAI):
 
         return lines
 
-    def set_goals(self):
-        # make sure I'm in the right mode
-        if any(isinstance(i,BeingEaten) for i in self.entity.statuses):
-            return BeingEatenNPC(self.entity)
-
-        if self.engine.turn_count - self.entity.last_peed > 240:
-            return PeeNPC(self.entity)
-
-        # decide on my target
-        if self.entity.room is not self.entity.scheduled_room and not self.target_tile:
-            self.target_tile = random.choice(self.entity.scheduled_room.inner)
-
-        return self
-
-    def decide(self):
+    def mosey(self):
         # random chance to talk to whoever's next to me
         adjacent_actors = self.entity.get_adjacent_actors()
         if len(adjacent_actors) > 0 and random.random() < self.chance_to_chat:
@@ -219,8 +243,21 @@ class Changeling(DefaultNPC):
         else:
             return ["Rlyxhheehhhxxxsss","SSSLlslllLLlLlurRRRRP", "hhhh", "*schlorp*", "..."]
 
-    def set_goals(self):
-        return self
+    @property
+    def panicking(self):
+        return False
+
+    @property
+    def has_to_pee(self):
+        return False
+
+    @property
+    def override(self):
+        return
+
+    @property
+    def resolve(self):
+        return
 
     def decide(self):
         return
@@ -236,11 +273,22 @@ class BeingEatenNPC(DefaultNPC):
     def get_voice_lines(self,target=None):
         return ["Mmffhh!!!","Hrrmlllp!","*muffled sobs*"]
 
-    def set_goals(self):
+    @property
+    def is_being_eaten(self):
+        return False
+
+    @property
+    def panicking(self):
+        return False
+
+    @property
+    def has_to_pee(self):
+        return False
+
+    @property
+    def resolve(self):
         if not any(isinstance(i,BeingEaten) for i in self.entity.statuses):
-            return DefaultNPC(self.entity)
-        return self
-            #todo: panicked NPC when ready
+            return self.parent
 
     def decide(self):
         self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y))
@@ -266,33 +314,37 @@ class PeeNPC(DefaultNPC):
 
         return lines + super().get_voice_lines(target)
 
+    @property
+    def has_to_pee(self):
+        return False
 
-    def set_goals(self):
-        # make sure I'm in the right mode
-        if any(isinstance(i,BeingEaten) for i in self.entity.statuses):
-            return BeingEatenNPC(self.entity)
+    @property
+    def resolve(self):
+        if self.pee_duration < 1:
+            return self.parent
 
+    def decide(self):
+        # pick the right toilet if you aren't there yet
+        if self.entity.xy != self.target_tile:
+            self.target_tile = self.pick_toilet()
+
+        # keep peein if you are
         if self.entity.xy == self.target_tile:
+
+            # log it if you're finishing up
             self.pee_duration -= 1
             if self.pee_duration < 1:
                 self.entity.last_peed = self.engine.turn_count
-                return DefaultNPC(self.entity)
-        else:
-            self.target_tile = self.pick_toilet()
 
-        return self
-
-    def decide(self):
-        # wait if you're in the right place
-        if self.entity.xy == self.target_tile:
             for tile in self.entity.room.inner:
                 if any(entity.xy == tile and entity is not self.entity for entity in self.entity.gamemap.entities):
                     self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y))
                     break
             self._intent.append(WaitAction(self.entity))
             return
-        # otherwise default stuff will get you there
-        super().decide()
+
+        # otherwise get there
+        self.mosey()
         
 
     def pick_toilet(self):

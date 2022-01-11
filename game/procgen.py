@@ -260,7 +260,7 @@ def generate_dungeon(floor_number, map_width, map_height, engine, game_mode, ite
 	for tile in toilet_tiles:
 		if tile != dungeon.engine.player.xy:
 			npc = entity_factories.NPC.spawn(dungeon,*tile)
-			npc.ai = PeeNPC(npc)
+			npc.last_peed = 0
 			break
 
 	NPC_number = random.choice(range(8,14))
