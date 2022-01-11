@@ -151,8 +151,8 @@ def render_run_info(
     console.print_box(58,y,1,v,"█\n"*v,fg=c)
 
     for k,i in enumerate("VIGOR"):
-        c1 = c if v <= 5-k else color.black
-        c2 = color.black if v <= 5-k else c
+        c1 = c if v < 5-k else color.black
+        c2 = color.black if v < 5-k else c
         console.print(58,44+k,i,fg=c1,bg=c2)
 
 def render_instructions(console: Console, location: Tuple[int,int]) -> None:

@@ -202,7 +202,7 @@ class Actor(Entity):
         self.bumps = ['EAT','TALK']
         self.bump_index = 1
         self.max_vigor = 48
-        self.vigor = 48
+        self._vigor = 48
 
     @property
     def color(self):
@@ -220,6 +220,16 @@ class Actor(Entity):
         self.bump_index += 1
         if self.bump_index >= len(self.bumps):
             self.bump_index = 0
+
+    @property
+    def vigor(self):
+        return self._vigor
+
+    @vigor.setter
+    def vigor(self,new_val):
+        self._vigor = max(min(self.max_vigor,new_val),0)
+        if self._vigor == 0:
+            self.die()
 
     @property
     def is_alive(self) -> bool:
@@ -243,6 +253,9 @@ class Actor(Entity):
         time_block = 22 if time_block == 0 else time_block
         return time_block
 
+    def apply_hunger(self):
+        self.engine.message_log.add_message("Your stomach growls (?)",Color.offwhite,"-1 vigor",Color.dark_red)
+        self.vigor -= 1
 
     def get_voice_line(self, target):
         vls = self.ai.get_voice_lines(target)
@@ -263,6 +276,8 @@ class Actor(Entity):
     def on_turn(self) -> None:
         for status in self.statuses:
             status.decrement()
+        if self is self.engine.player and self.engine.turn_count % 5 == 0:
+            self.apply_hunger()
 
     def corpse(self) -> None:
         self.gamemap.bloody_floor(self.x,self.y)
@@ -270,11 +285,9 @@ class Actor(Entity):
     def die(self) -> None:
         self.ai = None
         if self.engine.player is self:
-            death_message = "You died!"
-            death_message_color = Color.dark_red
+            self.engine.message_log.add_message("You died!",Color.dark_red)
             self.char = "%"
-            self.color = Color.corpse
-            self.name = f"remains of {self.name}"
+            self._color = Color.corpse
             self.render_order = RenderOrder.CORPSE
         else:
             self.engine.history.append(("kill enemy",self.name,self.engine.turn_count))

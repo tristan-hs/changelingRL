@@ -75,6 +75,7 @@ class Eating(ContingentStatusEffect):
 		self.contingent.die()
 
 		self.parent.morph_into(self.contingent)
+		self.parent.vigor += 48
 
 	def apply(self):
 		super().apply()
