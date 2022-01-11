@@ -97,13 +97,14 @@ def render_run_info(
         times = list(player.schedule.keys())
         times.sort()
         sched = ''
-        for i in times:
+        for j,i in enumerate(times):
             k = f"0{i}" if i < 10 else i
             n = player.schedule[i].name
             if len(n) > 10:
                 n = n[:8]+'..'
-            sched += f"{k}:00 - {n}\n"
-        console.print(61,9,sched,color.grey)
+            sched = f"{k}:00 - {n}"
+            c = color.offwhite if player.schedule[i] is player.scheduled_room else color.grey
+            console.print(61,9+j,sched,c)
 
     else:
         c = color.changeling
