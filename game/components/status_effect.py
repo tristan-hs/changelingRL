@@ -92,3 +92,11 @@ class BeingEaten(ContingentStatusEffect):
 
 	def remove(self):
 		self.parent.statuses.remove(self)
+
+class Tazed(StatusEffect):
+	base_duration = 2
+	color=color.cyan
+	description="stunned"
+
+	def remove(self):
+		self.parent.statuses.remove(self)

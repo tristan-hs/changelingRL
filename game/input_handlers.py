@@ -183,7 +183,12 @@ class EventHandler(BaseEventHandler):
             return False  # Skip enemy turn on exceptions.
 
         else:
+            self.engine.player.just_took_damage = False
+
             self.engine.handle_enemy_turns()
+            while self.engine.player.tazed:
+                self.engine.message_log.add_message("You spend a turn stunned.")
+                self.engine.handle_enemy_turns()
 
         self.engine.update_fov()
         return True

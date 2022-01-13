@@ -4,6 +4,7 @@ from typing import Optional, Tuple, TYPE_CHECKING
 
 from game.render_functions import DIRECTIONS
 from game import color, exceptions
+from game.components.status_effect import Tazed
 
 if TYPE_CHECKING:
     from game.engine import Engine
@@ -125,27 +126,22 @@ class ActionWithDirection(Action):
         return self.engine.game_map.get_actor_at_location(*self.dest_xy)
 
 
-class MeleeAction(ActionWithDirection):
+class TazeAction(ActionWithDirection):
     def perform(self) -> None:
         target = self.blocking_entity
         if not target:
             raise exceptions.Impossible("Nothing to attack.")
 
-        damage = 1
-        label = target.name
-        attack_desc = f"{self.entity.name.capitalize()} attacks {label}!"
-            
-        if damage > 0:
-            self.engine.message_log.add_message(
-                attack_desc, color.offwhite
-            )
-            target.take_damage(damage)
-            if target is self.engine.player and not target.is_alive:
-                target.cause_of_death = self.entity.name
-        else:
-            self.engine.message_log.add_message(
-                f"{attack_desc} But it does no damage.", color.offwhite
-            )
+        label = target.name if target is not self.engine.player else 'you'
+        attack_desc = f"{self.entity.name.capitalize()} tazes {label}!"
+
+        self.engine.message_log.add_message(attack_desc, color.cyan)
+
+        self.entity.ai.just_tazed = target
+        Tazed(target)
+        if target is self.engine.player:
+            target.take_damage(12)
+
 
 class EatAction(ActionWithDirection):
     def perform(self) -> None:

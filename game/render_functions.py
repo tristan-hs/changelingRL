@@ -131,10 +131,11 @@ def render_run_info(
         console.print_box(61,15,12,1,n)
 
     if not player.changeling_form:
-        console.draw_frame(60,26,20,24)
+        c = color.dark_red if player.just_took_damage else color.offwhite
+        console.draw_frame(60,26,20,24,fg=c)
         console.print_box(61,26,3,1, "LOG")
     else:
-        c = color.dark_red if random.random() < 0.05 else color.changeling
+        c = color.dark_red if player.just_took_damage else color.changeling
         console.draw_frame(60,26,20,24,fg=c)
         console.print_box(61,26,3,1,"LOG")
 

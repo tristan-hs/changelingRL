@@ -13,7 +13,7 @@ from game import color as Color
 
 from game.components.inventory import Inventory
 from game.components import consumable
-from game.components.status_effect import Eating, BeingEaten
+from game.components.status_effect import Eating, BeingEaten, Tazed
 from game.components.ai import Changeling, DefaultNPC
 
 from game.render_functions import DIRECTIONS
@@ -203,6 +203,7 @@ class Actor(Entity):
         self.bump_index = 1
         self.max_vigor = 48
         self._vigor = 48
+        self.just_took_damage = False
 
     @property
     def color(self):
@@ -253,6 +254,10 @@ class Actor(Entity):
         time_block = 22 if time_block == 0 else time_block
         return time_block
 
+    @property
+    def tazed(self):
+        return any(isinstance(i,Tazed) for i in self.statuses)
+
     def apply_hunger(self):
         self.engine.message_log.add_message("Your stomach growls (?)",Color.offwhite,"-1 vigor",Color.dark_red)
         self.vigor -= 1
@@ -289,6 +294,7 @@ class Actor(Entity):
             self.char = "%"
             self._color = Color.corpse
             self.render_order = RenderOrder.CORPSE
+            self.statuses = []
         else:
             self.engine.history.append(("kill enemy",self.name,self.engine.turn_count))
 
@@ -300,7 +306,11 @@ class Actor(Entity):
             self.corpse()
 
     def take_damage(self, amount: int) -> None:
-        self.die()
+        self.engine.message_log.add_message(f"You take {amount} damage!", Color.dark_red)
+        self.vigor -= amount
+        if not self.changeling_form:
+            self.ooze()
+        self.just_took_damage = True
 
     def preSpawn(self):
         while self.name == "<Unnamed>" or self.name in [e.name for e in self.gamemap.entities]:
@@ -323,9 +333,7 @@ class Actor(Entity):
 
     def eat(self,target):
         if not self.changeling_form:
-            self.changeling_form = True
-            self.ai = Changeling(self)
-            self.engine.message_log.add_message("You ooze into your true form.", Color.changeling)
+            self.ooze()
 
         if any(isinstance(i,Eating) and i.contingent != target for i in self.statuses):
             self.cancel_eat()
@@ -354,6 +362,13 @@ class Actor(Entity):
         self.engine.message_log.add_message(
             "Your transformation is complete.", self.color
         )
+
+    def ooze(self):
+        self.changeling_form = True
+        self.ai = Changeling(self)
+        self.engine.message_log.add_message("You ooze into your true form.", Color.changeling)
+        self.schedule = None
+        self.name = "you"
 
 
 

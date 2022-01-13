@@ -8,10 +8,10 @@ import numpy as np  # type: ignore
 import tcod
 
 from game.exceptions import Impossible
-from game.actions import Action, BumpAction, MeleeAction, MovementAction, WaitAction, TalkAction
+from game.actions import Action, BumpAction, MovementAction, WaitAction, TalkAction, TazeAction
 from game import color
 from game.render_functions import DIRECTIONS
-from game.components.status_effect import BeingEaten
+from game.components.status_effect import BeingEaten, Tazed
 
 if TYPE_CHECKING:
     from game.entity import Actor
@@ -120,6 +120,7 @@ class DefaultNPC(BaseAI):
         self.parent = parent
         self.suspicions = {}
         self.found = []
+        self.just_tazed = None
 
     @property
     def description(self):
@@ -133,8 +134,12 @@ class DefaultNPC(BaseAI):
         mp = []
         for e in self.entity.gamemap.entities:
             if not e.changeling_form and e.scheduled_room is self.entity.scheduled_room and e.room is not self.entity.scheduled_room and not self.entity.fov[e.x,e.y]:
-                p = self.entity.engine.player
+                p = self.engine.player
                 if p.name == e.name and self.entity.fov[p.x,p.y]:
+                    continue
+                if e.name in self.engine.investigations:
+                    continue
+                if e.name in self.engine.investigators:
                     continue
                 mp.append(e)
         return mp
@@ -162,6 +167,8 @@ class DefaultNPC(BaseAI):
 
     @property
     def override(self):
+        if self.entity.tazed:
+            return TazedNPC(self.entity,self)
         if self.is_being_eaten:
             return BeingEatenNPC(self.entity,self)
         if self.needs_to_investigate:
@@ -184,23 +191,19 @@ class DefaultNPC(BaseAI):
         # if you're the person who cried, [i]False alarm folks! Let my nerves get the better of me!
         # otherwise an investigation to find them begins
 
-    # a successful taze makes you skip a turn then takes a step back
-        # so a group of tazers can end you, but one will be vulnerable when they close the distance again
-
-    # tazing an NPC w/ no taze protocol = "ow, stop that"
-    # w/ taze protocol = disbelief / bemusement
-
-        # ===== 
-        # evacuation behavior
+    # ===== 
+    # evacuation behavior
         # suspicion > 20 = flee 
         # "Stay away from me until we can clear the bioscanner!"
         # everyone tazes each other on sight
 
-    # don't accumulate suspicion about investigators
-
-    # reset suspicion of people under investigation
+    # test
+        # tazing NPCs stuns them for a turn (maybe give player taze action?) and they do the voice
 
     def decide(self):
+        # clear someone's name if you tazed em and nothing else is going on
+        self.taze_check()
+
         # if you see something say something
         for a in self.fov_actors:
             if a.name in self.suspicions or a.name in self.engine.investigations:
@@ -222,8 +225,7 @@ class DefaultNPC(BaseAI):
         for a in self.engine.investigations:
             for b in self.fov_actors:
                 if a == b.name:
-                    #return self.taze(self.subject)
-                    return self.goto(b.xy)
+                    return self.taze(b.xy)
 
         # add missing persons to suspicion tally
         for p in self.missing_persons:
@@ -242,6 +244,26 @@ class DefaultNPC(BaseAI):
         self.mosey()
 
     # ========================================
+
+    def taze_check(self):
+        if self.just_tazed:
+            if self.just_tazed.name in self.engine.investigations:
+                i = self.engine.investigations.index(self.just_tazed.name)
+                self.engine.investigations.pop(i)
+                self.engine.investigators.pop(i)
+                self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,f"[i]{self.just_tazed.name} tazed and cleared of suspicion!"))
+            self.just_tazed = None
+
+    def taze(self,target_tile):
+        if [e for e in self.engine.game_map.entities if e.xy == target_tile][0].tazed:
+            if self.entity.distance(*target_tile) < 2:
+                self._intent.append(BumpAction(self.entity,self.entity.x-target_tile[0],self.entity.y-target_tile[1]))
+
+        elif self.entity.distance(*target_tile) < 2:
+            self._intent.append(TazeAction(self.entity,target_tile[0]-self.entity.x,target_tile[1]-self.entity.y))
+        
+        else:
+            self.goto(target_tile)
 
 
     def get_voice_lines(self,target):
@@ -312,9 +334,11 @@ class InvestigationNPC(DefaultNPC):
         self.has_announced = False
         self.subject_cleared = False
         self.investigation_started = self.engine.turn_count
-        self.engine.investigations.append(self.subject)
         self.has_approached = False
         self.subject_last_spotted = None
+
+        self.engine.investigations.append(self.subject)
+        self.engine.investigators.append(self.entity.name)
 
         del parent.suspicions[subject]
 
@@ -332,25 +356,23 @@ class InvestigationNPC(DefaultNPC):
 
     @property
     def resolve(self):
-        # when the investigation is cleared or the player becomes this person
-
-        # todo
-            # when the player eats this person
+        if self.subject not in self.engine.investigations:
+            return self.parent
 
         if self.subject_cleared:
             announcement = f"[i]{self.subject} has been found and their humanity verified. Stay safe everyone!"
             self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,announcement))
             self.engine.investigations.remove(self.subject)
+            self.engine.investigators.remove(self.entity.name)
             return self.parent
 
         investigation_duration = self.engine.turn_count - self.investigation_started
-        if investigation_duration % 20 == 0:
-            self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,"[i]My investigation has lasted another hour."))
 
         if investigation_duration > 480:
             announcement = f"[i]After a full day, {self.subject} has eluded me. Begin evacuation procedure. Trust no one."
             self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,announcement))
             self.engine.investigations.remove(self.subject)
+            self.engine.investigators.remove(self.entity.name)
             self.engine.evacuation_mode = True
             return self.parent
         
@@ -369,6 +391,8 @@ class InvestigationNPC(DefaultNPC):
             self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,announcement))
             self.has_announced = True
 
+        self.taze_check()
+
         # if you've followed them to where you last saw them, stop doing that
         if self.entity.xy == self.subject_last_spotted:
             self.subject_last_spotted = None
@@ -383,9 +407,7 @@ class InvestigationNPC(DefaultNPC):
                 self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,f"{self.subject}! Hold still for a second, let me verify you!"))
                 self.has_approached = True
 
-            # todo -- tazes
-            #return self.taze(self.subject)
-            return self.goto(self.subject_last_spotted)
+            return self.taze(self.subject_last_spotted)
 
         # if you can't, go where you last did
         if self.subject_last_spotted:
@@ -395,8 +417,7 @@ class InvestigationNPC(DefaultNPC):
         for a in self.engine.investigations:
             for b in self.fov_actors:
                 if a == b.name:
-                    #return self.taze(self.subject)
-                    return self.goto(b.xy)
+                    return self.taze(b.xy)
         
         # failing that, pick a room
         if not self.target_tile:
@@ -473,6 +494,42 @@ class BeingEatenNPC(DefaultNPC):
     @property
     def resolve(self):
         if not any(isinstance(i,BeingEaten) for i in self.entity.statuses):
+            return self.parent
+
+    def decide(self):
+        self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y))
+        self._intent.append(WaitAction(self.entity))
+
+
+class TazedNPC(DefaultNPC):
+    chance_to_chat=1
+
+    @property
+    def description(self):
+        return "stunned"
+
+    def get_voice_lines(self,target=None):
+        return ["Ow, stop that!", "Ouch!", "Back off!"]
+
+    @property
+    def is_being_eaten(self):
+        return False
+
+    @property
+    def needs_to_investigate(self):
+        return False
+
+    @property
+    def panicking(self):
+        return False
+
+    @property
+    def has_to_pee(self):
+        return False
+
+    @property
+    def resolve(self):
+        if not any(isinstance(i,Tazed) for i in self.entity.statuses):
             return self.parent
 
     def decide(self):
