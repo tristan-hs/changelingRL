@@ -11,7 +11,6 @@ from game import color, tile_types
 from game.entity import Actor, Item
 from game.actions import ActionWithDirection
 from game.render_functions import DIRECTIONS, D_ARROWS
-from game.components.ai import Statue
 from game.entity_factories import item_factories
 
 if TYPE_CHECKING:

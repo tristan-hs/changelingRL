@@ -157,17 +157,24 @@ class EatAction(ActionWithDirection):
 
 
 class TalkAction(ActionWithDirection):
+    def __init__(self,entity,dx,dy,line=None):
+        super().__init__(entity,dx,dy)
+        self.line = line
+
     def perform(self) -> None:
         target = self.blocking_entity
         if target == self.entity:
             target = None
 
-        if self.entity.fov[self.engine.player.x,self.engine.player.y]:
-            vl = self.entity.get_voice_line(target)
-            if vl:
-                self.engine.message_log.add_message(
-                    f"?: "+vl, color.offwhite, self.entity.label, self.entity.color
-                )
+        vl = self.entity.get_voice_line(target) if not self.line else self.line
+        pf = "?: "
+        if vl[:3] == '[i]':
+            pf = "[intercom]\n"+pf
+            vl = vl[3:]
+        if vl and (pf[0] == '[' or self.entity.fov[self.engine.player.x,self.engine.player.y]):
+            self.engine.message_log.add_message(
+                pf+vl, color.offwhite, self.entity.label, self.entity.color
+            )
 
 
 class BumpAction(ActionWithDirection):

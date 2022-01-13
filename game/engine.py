@@ -38,6 +38,8 @@ class Engine:
         self.confirmed_in_combat = False
         self.difficulty = meta.difficulty
         self.meta.do_combat_confirm = False
+        self.investigations = []
+        self.evacuation_mode = False
 
         self.history = []
 

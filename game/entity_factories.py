@@ -14,15 +14,6 @@ player = Actor(
     description="That's you!"
 )
 
-goblin = Actor(
-	char="g",
-	color=(20,150,20),
-	name="Goblin",
-	ai_cls=ai.HostileEnemy,
-	render_order = RenderOrder.ACTOR,
-	description="gobgobgob"
-)
-
 NPC = Actor(
 	color=(120,150,120),
 	ai_cls=ai.DefaultNPC,

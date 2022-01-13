@@ -93,7 +93,7 @@ class BaseAI(Action):
         return [(index[0], index[1]) for index in path]
 
     def goto(self,tile):
-        self.path = self.get_path_to(*self.target_tile)
+        self.path = self.get_path_to(*tile)
 
         if self.path:
             next_move = self.path[0:self.move_speed]
@@ -118,6 +118,8 @@ class DefaultNPC(BaseAI):
         self.move_speed = entity.move_speed
         self.target_tile = None
         self.parent = parent
+        self.suspicions = {}
+        self.taze_on_sight = []
 
     @property
     def description(self):
@@ -137,6 +139,10 @@ class DefaultNPC(BaseAI):
                 mp.append(e)
         return mp
 
+    @property
+    def fov_actors(self):
+        return [e for e in self.entity.gamemap.entities if self.entity.fov[e.x,e.y]]
+
     # AI PRIORITIES ===========================
 
     @property
@@ -144,7 +150,10 @@ class DefaultNPC(BaseAI):
         return any(isinstance(i,BeingEaten) for i in self.entity.statuses)
 
     @property
-    def panicking(self):
+    def needs_to_investigate(self):
+        for n in self.suspicions.keys():
+            if self.suspicions[n] > 100 and n not in self.engine.investigations:
+                return n
         return False
 
     @property
@@ -155,8 +164,8 @@ class DefaultNPC(BaseAI):
     def override(self):
         if self.is_being_eaten:
             return BeingEatenNPC(self.entity,self)
-        if self.panicking:
-            return
+        if self.needs_to_investigate:
+            return InvestigationNPC(self.entity,self,self.needs_to_investigate)
         if self.has_to_pee:
             return PeeNPC(self.entity,self)
 
@@ -164,7 +173,47 @@ class DefaultNPC(BaseAI):
     def resolve(self):
         return self
 
+
+    # shuttleless version of suspicion meter
+
+    # seeing your true form:
+        # [i]Changeling spotted in [room]!!
+        # x starts running!
+        # everyone rushes to that room
+        # if sighting confirmed, evacuation announcement
+        # if you're the person who cried, [i]False alarm folks! Let my nerves get the better of me!
+        # otherwise an investigation to find them begins
+
+    # a successful taze makes you skip a turn then takes a step back
+        # so a group of tazers can end you, but one will be vulnerable when they close the distance again
+
+    # just give everyone tazers to start
+
+    # tazing an NPC w/ no taze protocol = "ow, stop that"
+    # w/ taze protocol = disbelief / bemusement
+
+        # ===== 
+        # evacuation behavior
+        # suspicion > 20 = flee 
+        # "Stay away from me until we can clear the bioscanner!"
+        # everyone tazes each other on sight
+
+    # don't accumulate suspicion about investigators
+
     def decide(self):
+        # add missing persons to suspicion tally
+        for p in self.missing_persons:
+            if p.name in self.suspicions:
+                self.suspicions[p.name] += 1
+            else:
+                self.suspicions[p.name] = 1
+
+        for a in self.fov_actors:
+            if a.name in self.suspicions:
+                i = '[i]' if self.suspicions[a.name] > 100 else ''
+                del self.suspicions[a.name]
+                self._intent.append(TalkAction(self.entity,0,0,f"{i}I found {a.name}!"))
+
         # decide on my target
         if self.entity.room is not self.entity.scheduled_room and not self.target_tile:
             self.target_tile = random.choice(self.entity.scheduled_room.inner)
@@ -184,8 +233,7 @@ class DefaultNPC(BaseAI):
             room = [room for room in self.entity.gamemap.rooms if self.target_tile in room.inner][0]
             lines.append(f"Excuse me, I've got to get to the {room.name}.")
         elif self.entity.room is self.entity.scheduled_room:
-            pass
-            #lines.append(f"Work, work, work, keeps my hands busy.")
+            lines.append(f"*whistles*")
 
         if self.entity.room is not self.entity.scheduled_room and target:
             lines.append(f"Hello there, {target.name}!")
@@ -194,6 +242,13 @@ class DefaultNPC(BaseAI):
         for p in self.missing_persons:
             lines.append(f"I wonder where {p.name} is.")
             lines.append(f"{p.name} is usually here this time of day...")
+
+        for n in self.suspicions.keys():
+            amt = self.suspicions[n]
+            lines.append(f"My suspicion of {n} is at {amt}.")
+            if amt > 100:
+                lines.append(f"[i]My suspicion of {n} is at {amt}.")
+
 
         return lines
 
@@ -228,6 +283,100 @@ class DefaultNPC(BaseAI):
         # chill
         self._intent.append(WaitAction(self.entity))
 
+
+class InvestigationNPC(DefaultNPC):
+    def __init__(self,entity,parent,subject):
+        super().__init__(entity,parent)
+        self.subject = subject
+        self.has_announced = False
+        self.subject_cleared = False
+        self.investigation_started = self.engine.turn_count
+        self.engine.investigations.append(self.subject)
+        self.has_approached = False
+        self.subject_last_spotted = None
+
+    @property
+    def description(self):
+        return "investigating"
+
+    @property
+    def needs_to_investigate(self):
+        return False
+
+    @property
+    def has_to_pee(self):
+        return False
+
+    @property
+    def resolve(self):
+        # when the investigation is cleared or the player becomes this person
+        # todo -- second part of above
+        if self.subject_cleared:
+            announcement = f"[i]{self.subject} has been found and their humanity verified. Stay safe everyone!"
+            self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,announcement))
+            self.engine.investigations.remove(self.subject)
+            return self.parent
+
+        if self.engine.turn_count - self.investigation_started >= 480:
+            announcement = f"[i]After a full day, {self.subject} has eluded me. Begin evacuation procedure. Trust no one."
+            self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,announcement))
+            self.engine.investigations.remove(self.subject)
+            self.engine.evacuation_mode = True
+            return EvacuationNPC(self.entity,self.parent)
+        
+        return self
+
+    def get_voice_lines(self,target):
+        return [
+            f"Do let me know if you see {self.subject}!",
+            f"If I don't find {self.subject} quick, this whole place'll be upended."
+        ]
+
+    def decide(self):
+        # announce your investigation when it starts
+        if not self.has_announced:
+            announcement = f"[i]{self.subject} is hereby under investigation. If seen, taze them on sight!"
+            self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,announcement))
+            self.has_announced = True
+
+        # if you've followed them to where you last saw them, stop doing that
+        if self.entity.xy == self.subject_last_spotted:
+            self.subject_last_spotted = None
+
+        if self.entity.xy == self.target_tile:
+            self.target_tile = None
+
+        # if you can see them, get em
+        if self.subject in [a.name for a in self.fov_actors]:
+            self.subject_last_spotted = [a for a in self.fov_actors if a.name == self.subject][0].xy
+            if not self.has_approached:
+                self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,f"{self.subject}! Hold still for a second, let me verify you!"))
+                self.has_approached = True
+            #return self.taze(self.subject)
+            return self.goto(self.subject_last_spotted)
+
+        # if you can't, go where you last did
+        if self.subject_last_spotted:
+            return self.goto(self.subject_last_spotted)
+
+        # if you see another taze on sight individual, get em
+        for a in self.taze_on_sight:
+            for b in self.fov_actors:
+                if a.name == b.name:
+                    #return self.taze(self.subject)
+                    return self.goto(self.subject.xy)
+        
+        # failing that, pick a room
+        if not self.target_tile:
+            room = random.choice(self.engine.game_map.rooms)
+            self.target_tile = random.choice(room.inner)
+
+        # and go there
+        if self.target_tile:
+            return self.goto(self.target_tile)
+
+
+
 class Changeling(DefaultNPC):
     @property
     def description(self):
@@ -244,7 +393,7 @@ class Changeling(DefaultNPC):
             return ["Rlyxhheehhhxxxsss","SSSLlslllLLlLlurRRRRP", "hhhh", "*schlorp*", "..."]
 
     @property
-    def panicking(self):
+    def needs_to_investigate(self):
         return False
 
     @property
@@ -275,6 +424,10 @@ class BeingEatenNPC(DefaultNPC):
 
     @property
     def is_being_eaten(self):
+        return False
+
+    @property
+    def needs_to_investigate(self):
         return False
 
     @property
@@ -365,134 +518,3 @@ class PeeNPC(DefaultNPC):
         if path:
             return path[0]
 
-
-class HostileEnemy(BaseAI):
-
-    def __init__(self, entity: Actor,):
-        super().__init__(entity)
-        self.path: List[Tuple[int, int]] = None
-        self.move_speed = entity.move_speed
-        self.last_target = None
-
-    @property
-    def description(self):
-        return "hostile" if self.last_target else "asleep"
-
-    def distance_to(self, tx, ty):
-        dx = tx-self.entity.x
-        dy = ty-self.entity.y
-        return max(abs(dx),abs(dy))
-
-    def pick_target(self):
-        fov = tcod.map.compute_fov(
-            self.engine.game_map.tiles["transparent"],
-            (self.entity.x, self.entity.y),
-            radius=8,
-        )
-
-        # pick the first thing in fov that you can path to:
-            # a decoy
-            # the nearest of the player or its parts
-                # if you are seeing the player after not being in attack mode, send the notice message
-            # the last place you saw a player or its parts
-
-        # set last_target to whatever you pick
-
-        target = None
-
-        d_to_t = 0
-        for entity in [self.engine.player]:
-            if fov[entity.x,entity.y]:
-                d = len(self.get_path_to(*entity.xy))
-                if d and (not d_to_t or d_to_t > d):
-                    d_to_t = d
-                    target = entity
-        if target:
-            if not self.last_target:
-                self.engine.message_log.add_message(f"The ? spotted you!", color.offwhite, self.entity.name, self.entity.color)
-            self.last_target = target.xy
-            return (target,d_to_t,target.xy)
-
-        if self.last_target:
-            d = len(self.get_path_to(*self.last_target))
-            if d:
-                return (None, d, self.last_target)
-
-        return (None, None, None)
-
-
-    def decide(self) -> Optional[Action]:
-        self._intent = []
-
-        target, distance, xy = self.pick_target()
-        x, y = self.entity.xy
-
-        if not xy:
-            self._intent.append(WaitAction(self.entity))
-            return
-
-        if distance == 1:
-            self._intent.append(BumpAction(self.entity, xy[0]-x, xy[1]-y))
-            return
-        
-        self.path = self.get_path_to(xy[0], xy[1])
-
-        if self.path:
-            next_move = self.path[0:self.move_speed]
-            fx, fy = x, y
-            for m in next_move:
-                # only intend to move into non-walkables as an attack on a known target
-                if not self.engine.game_map.tile_is_walkable(*m) and (not target or m != target.xy):
-                    break
-                dx = m[0]-fx
-                dy = m[1]-fy
-                self._intent.append(BumpAction(self.entity, dx, dy))
-                fx += dx
-                fy += dy
-            if len(self._intent) > 0:
-                return
-
-        self._intent.append(WaitAction(self.entity))
-
-
-class Statue(BaseAI):
-    description = "docile"
-
-    def decide(self) -> Optional[Action]:
-        self._intent = [WaitAction(self.entity)]
-
-
-class ConfusedEnemy(BaseAI):
-    description = "confused"
-    """
-    A confused enemy will stumble around aimlessly for a given number of turns, then revert back to its previous AI.
-    If an actor occupies a tile it is randomly moving into, it will attack.
-    """
-
-    def __init__(
-        self, entity: Actor,
-    ):
-        super().__init__(entity)
-        self.move_speed = entity.move_speed
-
-    def decide(self) -> Optional[Action]:
-        self._intent = []
-
-        for i in range(self.move_speed):
-            # Pick a random direction
-            direction_x, direction_y = random.choice(
-                [
-                    (-1, -1),  # Northwest
-                    (0, -1),  # North
-                    (1, -1),  # Northeast
-                    (-1, 0),  # West
-                    (1, 0),  # East
-                    (-1, 1),  # Southwest
-                    (0, 1),  # South
-                    (1, 1),  # Southeast
-                ]
-            )
-            self._intent.append(BumpAction(self.entity, direction_x, direction_y))
-
-    def perform(self) -> None:
-        super().perform()
