@@ -42,13 +42,13 @@ class BaseAI(Action):
     def decide(self) -> Optional[Action]:
         raise NotImplementedError()
 
-    def perform(self) -> None:
-        self._intent = []
+    def perform(self,intent=None) -> None:
+        self._intent = intent or []
 
         ai = self.override or self.resolve or self
         if ai != self:
             self.entity.ai = ai
-            return ai.perform()
+            return ai.perform(self._intent)
 
         self.decide()
         for i in self.intent:
@@ -119,7 +119,7 @@ class DefaultNPC(BaseAI):
         self.target_tile = None
         self.parent = parent
         self.suspicions = {}
-        self.taze_on_sight = []
+        self.found = []
 
     @property
     def description(self):
@@ -187,8 +187,6 @@ class DefaultNPC(BaseAI):
     # a successful taze makes you skip a turn then takes a step back
         # so a group of tazers can end you, but one will be vulnerable when they close the distance again
 
-    # just give everyone tazers to start
-
     # tazing an NPC w/ no taze protocol = "ow, stop that"
     # w/ taze protocol = disbelief / bemusement
 
@@ -200,19 +198,42 @@ class DefaultNPC(BaseAI):
 
     # don't accumulate suspicion about investigators
 
+    # reset suspicion of people under investigation
+
     def decide(self):
+        # if you see something say something
+        for a in self.fov_actors:
+            if a.name in self.suspicions or a.name in self.engine.investigations:
+                if a.name in self.suspicions:
+                    del self.suspicions[a.name]
+
+                if a.name not in self.found:
+                    i = '[i]' if a.name in self.engine.investigations else ''
+                    r = f" in the {a.room.name}" if a.name in self.engine.investigations else ''
+                    self._intent.append(TalkAction(self.entity,0,0,f"{i}I found {a.name}{r}!"))
+                    self.found.append(a.name)
+
+        # lose sight of people
+        for i,name in enumerate(self.found):
+            if name not in [a.name for a in self.fov_actors]:
+                self.found.pop(i)
+
+        # if you see a taze on sight individual, get em
+        for a in self.engine.investigations:
+            for b in self.fov_actors:
+                if a == b.name:
+                    #return self.taze(self.subject)
+                    return self.goto(b.xy)
+
         # add missing persons to suspicion tally
         for p in self.missing_persons:
             if p.name in self.suspicions:
-                self.suspicions[p.name] += 1
+                if p.name in self.engine.investigations:
+                    del self.suspicions[p.name]
+                else:
+                    self.suspicions[p.name] += 1
             else:
                 self.suspicions[p.name] = 1
-
-        for a in self.fov_actors:
-            if a.name in self.suspicions:
-                i = '[i]' if self.suspicions[a.name] > 100 else ''
-                del self.suspicions[a.name]
-                self._intent.append(TalkAction(self.entity,0,0,f"{i}I found {a.name}!"))
 
         # decide on my target
         if self.entity.room is not self.entity.scheduled_room and not self.target_tile:
@@ -295,6 +316,8 @@ class InvestigationNPC(DefaultNPC):
         self.has_approached = False
         self.subject_last_spotted = None
 
+        del parent.suspicions[subject]
+
     @property
     def description(self):
         return "investigating"
@@ -310,19 +333,26 @@ class InvestigationNPC(DefaultNPC):
     @property
     def resolve(self):
         # when the investigation is cleared or the player becomes this person
-        # todo -- second part of above
+
+        # todo
+            # when the player eats this person
+
         if self.subject_cleared:
             announcement = f"[i]{self.subject} has been found and their humanity verified. Stay safe everyone!"
             self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,announcement))
             self.engine.investigations.remove(self.subject)
             return self.parent
 
-        if self.engine.turn_count - self.investigation_started >= 480:
+        investigation_duration = self.engine.turn_count - self.investigation_started
+        if investigation_duration % 20 == 0:
+            self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,"[i]My investigation has lasted another hour."))
+
+        if investigation_duration > 480:
             announcement = f"[i]After a full day, {self.subject} has eluded me. Begin evacuation procedure. Trust no one."
             self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,announcement))
             self.engine.investigations.remove(self.subject)
             self.engine.evacuation_mode = True
-            return EvacuationNPC(self.entity,self.parent)
+            return self.parent
         
         return self
 
@@ -352,6 +382,8 @@ class InvestigationNPC(DefaultNPC):
             if not self.has_approached:
                 self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,f"{self.subject}! Hold still for a second, let me verify you!"))
                 self.has_approached = True
+
+            # todo -- tazes
             #return self.taze(self.subject)
             return self.goto(self.subject_last_spotted)
 
@@ -360,11 +392,11 @@ class InvestigationNPC(DefaultNPC):
             return self.goto(self.subject_last_spotted)
 
         # if you see another taze on sight individual, get em
-        for a in self.taze_on_sight:
+        for a in self.engine.investigations:
             for b in self.fov_actors:
-                if a.name == b.name:
+                if a == b.name:
                     #return self.taze(self.subject)
-                    return self.goto(self.subject.xy)
+                    return self.goto(b.xy)
         
         # failing that, pick a room
         if not self.target_tile:
