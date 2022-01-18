@@ -1037,10 +1037,6 @@ class PlayMenuHandler(AskUserEventHandler):
             console.print(x,y,s,fg=color.offwhite,bg=bg,alignment=tcod.CENTER)
             y += 2
 
-        if self.header == "OPTIONS":
-            difficulty = "EASY" if self.engine.difficulty == "easy" else "NORMAL"
-            console.print(x,y,f"Difficulty ({difficulty})",color.grey,alignment=tcod.CENTER)
-
     def on_render(self, console: tcod.Console) -> None:
         super().on_render(console)
 
@@ -1075,9 +1071,7 @@ class PlayMenuHandler(AskUserEventHandler):
 
     def onOptions(self):
         options = [
-            ("Full Screen",self.onFullScreen),
-            ("Confirm Combat Start",self.onCombatConfirm),
-            ("Tutorial Messages",self.onTutorialMessages)
+            ("Full Screen",self.onFullScreen)
         ]
         return PlayMenuHandler(self.engine,self,options,header="OPTIONS")
 
@@ -1089,12 +1083,6 @@ class PlayMenuHandler(AskUserEventHandler):
 
     def onFullScreen(self):
         raise exceptions.ToggleFullscreen()
-
-    def onCombatConfirm(self):
-        self.engine.meta.do_combat_confirm = not self.engine.meta.do_combat_confirm
-
-    def onTutorialMessages(self):
-        self.engine.meta.tutorials = not self.engine.meta.tutorials
 
 # todo: genericize this
 class InspectHandler(AskUserEventHandler):

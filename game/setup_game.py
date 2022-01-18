@@ -111,11 +111,9 @@ class MainMenu(input_handlers.BaseEventHandler):
 
         menu_width = 24
         for i, text in enumerate(
-            ["(c)ontinue", "(n)ew game", "(h)istory", "(o)ptions", "(q)uit"]
+            ["(c)ontinue", "(n)ew game", "(o)ptions", "(q)uit"]
         ):
             if i == 0 and not self.engine:
-                continue
-            if i == 2 and not len(self.meta.old_runs):
                 continue
             console.print(
                 72,
@@ -126,20 +124,6 @@ class MainMenu(input_handlers.BaseEventHandler):
                 alignment=tcod.CENTER,
                 bg_blend=tcod.BKGND_ALPHA(64),
             )
-
-        if self.engine:
-            history = self.engine.history
-            uses = [i for i in history if i[0] in ['use item']]
-            kills = [i for i in history if i[0] == 'kill enemy']
-            pname = 'player'
-
-            x = 22
-            y = 21
-
-            console.print(x,y,pname,color.player)
-
-            console.print(x,y+2,f"Floor: D{self.engine.game_map.floor_number}",color.offwhite)
-            console.print(x,y+3,f"Turn:  {self.engine.turn_count}",color.offwhite)
 
 
     def ev_keydown(
@@ -156,8 +140,6 @@ class MainMenu(input_handlers.BaseEventHandler):
             if self.engine:
                 return input_handlers.Confirm(parent=self,callback=self.start_new_game,prompt="Start a new game? Your existing save will be overwritten and marked as a loss.")
             else: return self.start_new_game()
-        elif event.sym == tcod.event.K_h and len(self.meta.old_runs):
-            return HistoryMenu(self)
         elif event.sym == tcod.event.K_o:
             return OptionsMenu(self, self.meta)
 
@@ -180,86 +162,6 @@ class SubMenu(input_handlers.BaseEventHandler):
         console.draw_semigraphics(background_image, 0, 0)
         console.print(7,47,"(ESC) to go back")
 
-class HistoryMenu(SubMenu):
-    def __init__(self, parent):
-        super().__init__(parent)
-
-        history = self.parent.meta.old_runs
-        shistory = [event for run in history for event in run]
-        last_run = history[-1]
-
-        stats = {}
-
-        # LAST RUN STATS
-        last_run = history[-1]
-
-        stats['Last run'] = [
-            ('name', "player"),
-            ('won', last_run[-1][0] == "win"),
-            ('level', len([i for i in last_run if i[0] == "descend stairs"])+1),
-            ('turns', last_run[-1][2]),
-            ('unique kills', len(set([i[1] for i in last_run if i[0] == "kill enemy"]))),
-            ('items identified', len(set([i[1] for i in last_run if i[0] == "identify item"]))),
-            ('killed by', last_run[-1][1])
-        ]
-
-        # ALL TIME STATS
-        killed_bys = [i[-1][1] for i in history if i[-1][0] == "lose"]
-
-        stats['All time'] = [
-            ('turns', sum([i[-1][2] for i in history])),
-            ('unique kills', len(set([event[1] for event in shistory if event[0] == "kill enemy"]))), 
-            ('items identified', len(set([event[1] for event in shistory if event[0] == "identify item"]))),
-            ('nemesis', max(set(killed_bys),key=killed_bys.count) if len(killed_bys) > 0 else "")
-        ]
-
-        # RECORDS
-        floors = set([event[1] for event in shistory if event[0] == "descend stairs"])
-        highest_floor = max(floors) if len(floors) > 0 else 1
-        wins = [i for i in history if i[-1][0] == "win"]
-
-        stats['Records'] = [
-            ('lowest floor', max(floors) if len(floors) > 0 else 1),
-            ('wins', len(wins)),
-            ('win %', math.floor((len([i for i in shistory if i[0] == "win"])/len([i for i in shistory if i[0] in ["win","lose"]]))*10000)/100),
-            ('fastest win', min([i[-1][2] for i in wins]) if wins else "n/a")
-        ]
-
-        self.stats = stats
-
-
-    def on_render(self, console:tcod.Console) -> None:
-        super().on_render(console)
-        c2 = color.grey
-        c3 = color.offwhite
-
-        console.print(7,7,"HISTORY")
-
-        console.print(8,10,"Last run")
-        s = self.stats['Last run']
-        console.print(9,12,s[0][1],color.player)
-        if s[1][1]:
-            console.print(9,13,"WON THE GAME",color.purple)
-        else:
-            console.print(9,13,f"defeated on floor",c2)
-            console.print(27,13,str(s[2][1]),c3)
-        y = self.print_subsection(console,s[3:],15,c2,c3)
-        
-        console.print(8,y+2,"All time")
-        y = self.print_subsection(console,self.stats['All time'],y+4,c2,c3)
-
-        y = self.print_subsection(console,self.stats['Records'],y+1,c2,c3)
-
-    def print_subsection(self,console,s,y,c2,c3):
-        indent = max([len(i[0]) for i in s])+11
-        for k,v in enumerate(s):
-            console.print(9,y,f"{v[0]}",c2)
-            i = str(v[1])
-            c = c3 if i in ['0','n/a','0.0'] else c3
-            console.print(indent,y,i,c)
-            y += 1
-        return y
-
     
 class OptionsMenu(SubMenu):
     def __init__(self, parent, meta):
@@ -272,15 +174,7 @@ class OptionsMenu(SubMenu):
         super().on_render(console)
         console.print(7,7,"OPTIONS")
         console.print(8,10,"(f)ullscreen")
-        ccstatus = "ON" if self.meta.do_combat_confirm else "OFF"
-        console.print(8,12,"(c)onfirm combat start - "+ccstatus)
         tstatus = "ON" if self.meta.tutorials else "OFF"
-        console.print(8,14,"(t)utorial messages    - "+tstatus)
-
-        if len(self.meta.tutorial_events) > 0 or self.reset_tutorial_events:
-            console.print(8,16,"(r)eset tutorial")
-        if self.reset_tutorial_events:
-            console.print(31,16,"☑",fg=color.player)
 
         """
         dstatus = "EASY" if self.meta.difficulty == "easy" else "NORMAL"
@@ -293,23 +187,8 @@ class OptionsMenu(SubMenu):
         if event.sym == tcod.event.K_f:
             self.meta.fullscreen = not self.meta.fullscreen
             raise exceptions.ToggleFullscreen()
-        if event.sym == tcod.event.K_c:
-            self.meta.do_combat_confirm = not self.meta.do_combat_confirm
-        if event.sym == tcod.event.K_t:
-            self.meta.tutorials = not self.meta.tutorials
-        if event.sym == tcod.event.K_r:
-            return input_handlers.Confirm(self,self.do_reset_tutorial_events,"Enable all old tutorial messages?")
-        """
-        if event.sym == tcod.event.K_d:
-            self.meta.difficulty = "normal" if self.meta.difficulty == "easy" else "easy"
-            self.difficulty_changed = not self.difficulty_changed
-        """
+        
         return super().ev_keydown(event)
-
-    def do_reset_tutorial_events(self):
-        self.meta.tutorial_events = []
-        self.reset_tutorial_events = True
-        return self
 
 
 class Meta():
