@@ -1129,8 +1129,8 @@ class InspectHandler(AskUserEventHandler):
             self.frame_color = thing._color if hasattr(thing,'ai') else thing.color
             self.flavor = thing.flavor
 
-        self.frame_width = max(len(i) for i in (self.title, range(19)) if i is not None)+4
-        self.frame_x = 60-self.frame_width-1
+        self.frame_width = max(len(i) for i in (self.title, range(22)) if i is not None)+4
+        self.frame_x = 58-self.frame_width-1
         self.frame_y = 1
         self.parent = parent_handler
 
