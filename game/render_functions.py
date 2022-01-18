@@ -169,7 +169,7 @@ def render_names_at_mouse_location(
         return
 
     room = engine.game_map.room_at_location(mouse_x,mouse_y)
-    if engine.game_map.visible[mouse_x,mouse_y]:
+    if engine.game_map.explored[mouse_x,mouse_y]:
         console.print(61,16,room,fg=color.grey)
     else:
         y -= 1
