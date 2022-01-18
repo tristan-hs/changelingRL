@@ -47,7 +47,7 @@ def new_game(meta) -> Engine:
     engine.turn_count = 240
 
     game_mode = 'default'
-    game_mode = 'overview'
+    # game_mode = 'overview'
     # game_mode = 'consumable testing'
     # game_mode = 'god mode'
 

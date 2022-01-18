@@ -161,6 +161,12 @@ class EventHandler(BaseEventHandler):
             if not self.engine.player.is_alive:
                 # The player was killed sometime during or after the action.
                 return GameOverEventHandler(self.engine)
+
+            evacuees = len([e for e in self.engine.game_map.actors if e.is_alive and e.xy in self.engine.game_map.shuttle.evac_area and e is not self.engine.player])
+            if evacuees > 0 and evacuees == len([e for e in self.engine.game_map.actors if e is not self.engine.player]):
+                return GameOverEventHandler(self.engine,cause="evacuation")
+
+
             if self.engine.player.room.name == "Shuttle" and self.engine.player.xy in self.engine.player.room.evac_area:
                 return VictoryEventHandler(self.engine)
             return MainGameEventHandler(self.engine)  # Return to the main handler.
@@ -419,7 +425,7 @@ class ConfirmCombatHandler(EventHandler):
 
 
 class GameOverEventHandler(EventHandler):
-    def __init__(self,engine,loss=True):
+    def __init__(self,engine,loss=True,cause=None):
         super().__init__(engine)
         if os.path.exists(utils.get_resource("savegame.sav")):
             os.remove(utils.get_resource("savegame.sav"))  # Deletes the active save file.
@@ -428,8 +434,12 @@ class GameOverEventHandler(EventHandler):
         self.engine.history.append((event,self.engine.player.cause_of_death,self.engine.turn_count))
         self.engine.log_run()
 
+        self.cause = cause
+        if cause == "evacuation":
+            self.engine.message_log.add_message("All survivors made it to the shuttle! You're stranded here forever.", color.dark_red)
+
     def on_quit(self) -> None:
-        return GameOverStatScreen(self.engine)
+        return GameOverStatScreen(self.engine,self.cause)
         
     def ev_quit(self, event: tcod.event.Quit):
         return self.on_quit()
@@ -448,6 +458,10 @@ class VictoryEventHandler(GameOverEventHandler):
 
 
 class GameOverStatScreen(EventHandler):
+    def __init__(self,engine,cause=None):
+        super().__init__(engine)
+        self.cause = cause
+
     def ev_quit(self, event: tcod.event.Quit):
         return self.on_quit()
         
@@ -462,13 +476,17 @@ class GameOverStatScreen(EventHandler):
         history = self.engine.history
         kills = [i for i in history if i[0] == 'kill enemy']
 
-        if not self.engine.player.is_alive:
+        if not self.engine.player.is_alive or self.cause:
             console.print(1,1,"R.I.P.",color.dark_red)
             console.print(8,1,"changeling",color.changeling)
 
             cod = self.engine.player.cause_of_death
             a = 'a '
-            console.print(1,3,f"Died in the {self.engine.player.room.name}.",color.red)
+
+            if not self.cause:
+                console.print(1,3,f"Died in the {self.engine.player.room.name}.",color.dark_red)
+            else:
+                console.print(1,3,f"Stranded.", color.dark_red)
 
         else:
             console.print(1,1,"Congratulations, ",color.purple)

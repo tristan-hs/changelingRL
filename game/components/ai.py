@@ -667,4 +667,30 @@ class EvacuationNPC(DefaultNPC):
         return
 
     def decide(self):
-        self.goto(self.engine.game_map.upstairs_location)
+        if not self.engine.gate_unlocked:
+            if self.entity.is_keyholder:
+                self.goto_gate()
+            elif self.entity.id % 2 == 0:
+                tile = random.choice(self.engine.game_map.shuttle.inner)
+                while tile in self.engine.game_map.shuttle.evac_area:
+                    tile = random.choice(self.engine.game_map.shuttle.inner)
+                self.goto(tile)
+            else:
+                self.goto(random.choice([r for r in self.engine.game_map.rooms if r.name == "Main Hall"][0].inner))
+        else:
+            self.goto(random.choice(self.engine.game_map.shuttle.evac_area))
+
+    def goto_gate(self):
+        # if I'm next to the gate, unlock it, else
+        if self.entity.distance(*self.engine.game_map.shuttle.gate) < 2:
+            self.engine.message_log.add_message(f"{self.entity.name} unlocks the shuttle gate!", color.yellow)
+            self.engine.gate_unlocked = True
+            return
+        
+        start_intent = len(self._intent)
+        di = DIRECTIONS[:]
+        random.shuffle(di)
+        for d in di:
+            self.goto((self.engine.game_map.shuttle.gate[0]+d[0],self.engine.game_map.shuttle.gate[1]+d[1]))
+            if len(self._intent) > start_intent:
+                break
