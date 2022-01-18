@@ -259,6 +259,8 @@ class DefaultNPC(BaseAI):
                     del self.suspicions[p.name]
                 else:
                     self.suspicions[p.name] += 1
+                    if self.suspicions[p.name] == 50:
+                        self._intent.append(TalkAction(self.entity,0,0,f"[i]{p.name}, you're missed in the {self.entity.room.name}. Please report in."))
             else:
                 self.suspicions[p.name] = 1
 
@@ -312,10 +314,7 @@ class DefaultNPC(BaseAI):
             lines.append(f"{p.name} is usually here this time of day...")
 
         for n in self.suspicions.keys():
-            amt = self.suspicions[n]
-            lines.append(f"My suspicion of {n} is at {amt}.")
-            if amt > 100:
-                lines.append(f"[i]My suspicion of {n} is at {amt}.")
+            lines.append(f"{n} has been acting strange lately.")
 
 
         return lines
