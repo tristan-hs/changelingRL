@@ -64,6 +64,11 @@ class Eating(ContingentStatusEffect):
 	def description(self):
 		return f"subsuming {self.contingent.name}"
 
+	def decrement(self):
+		super().decrement()
+		if self.duration not in [self.base_duration-1,0]:
+			self.engine.message_log.add_message(f"You continue subsuming {self.contingent.name}...", color.changeling)
+
 	def cancel(self):
 		super().remove()
 		eat_status = [i for i in self.contingent.statuses if isinstance(i,BeingEaten)][0]
@@ -80,6 +85,25 @@ class Eating(ContingentStatusEffect):
 	def apply(self):
 		super().apply()
 		BeingEaten(self.contingent,self.parent)
+
+
+class Dismantling(StatusEffect):
+	base_duration=5
+	color=color.cyan
+	description="dismantling the bioscanner"
+
+	def decrement(self):
+		super().decrement()
+		if self.duration not in [self.base_duration-1,0]:
+			self.engine.message_log.add_message("You continue dismantling the bioscanner.")
+
+	def cancel(self):
+		super().remove
+
+	def remove(self):
+		self.parent.statuses.remove(self)
+		self.engine.message_log.add_message("You have finished dismantling the bioscanner.",color.purple)
+		self.engine.bioscanner_dismantled = True
 
 
 class BeingEaten(ContingentStatusEffect):

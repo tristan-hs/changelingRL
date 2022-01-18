@@ -198,9 +198,7 @@ class MovementAction(ActionWithDirection):
 
         if not self.engine.game_map.tile_is_walkable(*self.dest_xy):
             if self.entity is self.engine.player and self.dest_xy == self.engine.game_map.shuttle.bioscanner and not self.engine.bioscanner_dismantled:
-                self.engine.bioscanner_dismantled = True
-                self.engine.message_log.add_message("You dismantle the bioscanner.",color.purple)
-                return
+                return self.entity.dismantle()
             else:
                 raise exceptions.Impossible("That way is blocked.")
 

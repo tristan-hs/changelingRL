@@ -13,7 +13,7 @@ from game import color as Color
 
 from game.components.inventory import Inventory
 from game.components import consumable
-from game.components.status_effect import Eating, BeingEaten, Tazed
+from game.components.status_effect import Eating, BeingEaten, Tazed, Dismantling
 from game.components.ai import Changeling, DefaultNPC
 
 from game.render_functions import DIRECTIONS
@@ -347,10 +347,18 @@ class Actor(Entity):
             f"You begin to subsume ?.", Color.changeling, target.name, target.color
         )
 
+    def dismantle(self):
+        Dismantling(self)
+        self.engine.message_log.add_message("You begin dismantling the bioscanner.")
+
     def cancel_eat(self):
         eat_status = [i for i in self.statuses if isinstance(i,Eating)]
         if len(eat_status):
             eat_status[0].cancel()
+
+        dismantle_status = [i for i in self.statuses if isinstance(i,Dismantling)]
+        if len(dismantle_status):
+            dismantle_status[0].cancel()
 
     def morph_into(self,target):
         self.schedule = target.schedule
