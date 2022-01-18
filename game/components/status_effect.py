@@ -98,7 +98,7 @@ class Dismantling(StatusEffect):
 			self.engine.message_log.add_message("You continue dismantling the bioscanner.")
 
 	def cancel(self):
-		super().remove
+		super().remove()
 
 	def remove(self):
 		self.parent.statuses.remove(self)
