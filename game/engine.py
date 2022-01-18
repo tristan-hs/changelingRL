@@ -17,6 +17,7 @@ import game.color as color
 from game.render_order import RenderOrder
 from game.exceptions import Impossible
 from game.entity import Actor
+from game import tile_types
 
 if TYPE_CHECKING:
     from game.game_map import GameMap, GameWorld
@@ -42,12 +43,23 @@ class Engine:
         self.investigators = []
         self.sightings = []
         self.evacuation_mode = False
-        self.bioscanner_dismantled = False
+        self._bioscanner_dismantled = False
 
         self.history = []
 
     def log_run(self):
         self.meta.log_run(self.history)
+
+    @property
+    def bioscanner_dismantled(self):
+        return self._bioscanner_dismantled
+
+    @bioscanner_dismantled.setter
+    def bioscanner_dismantled(self,new_val):
+        self._bioscanner_dismantled = new_val
+        if new_val:
+            self.game_map.tiles[self.game_map.shuttle.bioscanner] = tile_types.dismantled_bioscanner
+            self.game_map.tiles[self.game_map.shuttle.gate] = tile_types.floor
 
     # field of view
     @property

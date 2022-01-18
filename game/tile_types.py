@@ -135,3 +135,11 @@ bioscanner = new_tile(
     dark=(ord("╬"), (50,50,50), (25,0,25)),
     light=(ord("╬"), (75,150,75), (50,0,50))
 )
+dismantled_bioscanner = new_tile(
+    name='bioscanner',
+    flavor='WARNING: Bioscanner critically damaged. Repair ASAP.',
+    walkable=False,
+    transparent=True,
+    dark=(ord("╬"), (50,50,50), (25,0,25)),
+    light=(ord("╬"), (200,75,75), (50,0,50))
+)
