@@ -648,7 +648,7 @@ class InvestigateSightingNPC(DefaultNPC):
 
     def decide(self):
         for s in self.engine.sightings:
-            if s[0] == self.entity.room:
+            if s[0] == self.entity.room and s[1] != self.entity.name:
                 self.engine.sightings.remove(s)
                 announcement = f"[i]Not seeing a changeling in {self.entity.room.name}. False alarm, I think."
                 self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,announcement))
