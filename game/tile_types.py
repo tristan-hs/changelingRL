@@ -71,7 +71,7 @@ floor = new_tile(
 
 bloody_floor = new_tile(
     name='floor',
-    flavor='Stained with the viscera of your foes.',
+    flavor='Stained with the viscera of your victims.',
     walkable=True,
     transparent=True,
     dark=(ord(" "), (50,50,50), (7,7,7)),
@@ -79,7 +79,7 @@ bloody_floor = new_tile(
 )
 wall = new_tile(
     name='wall',
-    flavor='Solid inanimate stone.',
+    flavor='Solid inanimate material.',
     walkable=False,
     transparent=False,
     dark=(ord(" "), (255, 255, 255), (25,0,25)),
@@ -102,11 +102,36 @@ door = new_tile(
     light=(ord("+"), (150,75,75), (10,10,10))
 )
 
-boss_vault_floor = new_tile(
-    name='floor',
-    flavor='Glowing with the malus of finality.',
+
+gate = new_tile(
+    name='shuttle gate',
+    flavor='The only way into the evacuation area. Be sure to dismantle the bioscanner before using.',
     walkable=True,
     transparent=True,
-    dark=(ord(" "), (255,255,255), (10,0,0)),
-    light=(ord("."), (25,25,25), (20,0,0)),
+    dark=(ord("░"), (50,50,50), (5,5,5)),
+    light=(ord("░"), (75,150,75), (10,10,10))
+)
+fence = new_tile(
+    name='fence',
+    flavor='A sturdy barrier.',
+    walkable=False,
+    transparent=True,
+    dark=(ord("┼"), (100,50,50), (7,7,7)),
+    light=(ord("┼"), (150,75,75), (10,10,10)),
+)
+evac_area = new_tile(
+    name='floor',
+    flavor='When you fall, it will be there for you.',
+    walkable=True,
+    transparent=True,
+    dark=(ord(" "), (50,50,50), (7,10,7)),
+    light=(ord("."), (25,25,25), (10,20,10)),
+)
+bioscanner = new_tile(
+    name='bioscanner',
+    flavor='Scans the genetic content of any who pass through the nearby gate, tazing any existential threats to humanity.',
+    walkable=False,
+    transparent=True,
+    dark=(ord("╬"), (50,50,50), (25,0,25)),
+    light=(ord("╬"), (75,150,75), (50,0,50))
 )

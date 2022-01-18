@@ -218,13 +218,6 @@ class DefaultNPC(BaseAI):
     def resolve(self):
         return self
 
-    # todo
-        # if someone sees you subsume someone else, they'll announce an investigation on you w/ special announcement
-
-    # test
-        # tazing NPCs stuns them for a turn (maybe give player taze action?) and they do the voice
-        # retest clearing NPC's name w/o stun turn
-
     def decide(self):
         # clear someone's name if you tazed em and nothing else is going on
         self.taze_check()

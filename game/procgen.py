@@ -211,6 +211,72 @@ class MainRoom(Room):
 			if self.closet:
 				self.sprout = self.seed
 
+class ShuttleRoom(MainRoom):
+	min_size = 6
+	max_size = 11
+
+	def finalize(self):
+		super().finalize()
+		for tile in self.evac_area:
+			self.dungeon.tiles[tile] = tile_types.evac_area
+		for tile in self.fence:
+			self.dungeon.tiles[tile] = tile_types.wall
+		self.dungeon.tiles[self.gate] = tile_types.gate
+		self.dungeon.tiles[self.bioscanner] = tile_types.bioscanner
+
+	def generate(self):
+		super().generate()
+		if not self.valid:
+			return
+
+		xdiff = self.x2 - self.x1
+		ydiff = self.y2 - self.y1
+		halves = [
+			(self.x1,self.x2 - (xdiff//2),self.y1,self.y2),
+			(self.x1 + (xdiff//2),self.x2,self.y1,self.y2),
+			(self.x1,self.x2,self.y1+(ydiff//2),self.y2),
+			(self.x1,self.x2,self.y1,self.y2-(ydiff//2))
+		]
+
+		halves = [h for h in halves if self.sprout[0] not in [h[0],h[1]] and self.sprout[1] not in [h[2],h[3]]]
+		if not len(halves):
+			self.valid = False
+			return
+
+		half = random.choice(halves)
+
+		evac = []
+		for x in range(half[0]+1,half[1]):
+			for y in range(half[2]+1,half[3]):
+				evac.append((x,y))
+
+		self.evac_area = evac
+
+		fence = list(half)
+		for i,c in enumerate([self.x1,self.x2,self.y1,self.y2]):
+			if c != half[i]:
+				counterpart = {0:1,1:0,2:3,3:2}[i]
+				fence[counterpart] = half[i]
+
+				if i in [1,3]:
+					fence[i] += 1
+					fence[counterpart] -= 1
+				else:
+					fence[i] -= 1
+					fence[counterpart] += 1
+
+
+		self.fence = []
+		for x in range(fence[0]+1,fence[1]):
+			for y in range(fence[2]+1,fence[3]):
+				self.fence.append((x,y))
+
+		gate_i = random.choice(range(len(self.fence)))
+		self.gate = self.fence.pop(gate_i)
+
+		bio_i = random.choice([i for i in [gate_i-1,gate_i] if i > -1 and i < len(self.fence)])
+		self.bioscanner = self.fence.pop(bio_i)
+
 
 class Closet(MainRoom):
 	min_size = 1
@@ -232,7 +298,19 @@ def generate_dungeon(floor_number, map_width, map_height, engine, game_mode, ite
 	hall = MainHall(map_width,map_height,dungeon)
 	hall.finalize()
 
-	room_names = ["Bunks","Dining H.","Engine R.","Bridge","Observations","Lab","Rec Room","Holohall","Equipment","Workshop","Green Room","Salon"]
+	attempts = 1000
+	for i in range(attempts):
+		shuttle = ShuttleRoom(map_width,map_height,dungeon,hall)
+		if not shuttle.valid:
+			continue
+		shuttle.name = "Shuttle"
+		shuttle.finalize()
+		break
+
+	if not [r for r in dungeon.rooms if r.name == "Shuttle"]:
+		return generate_dungeon(floor_number,map_width,map_height,engine,game_mode,items)
+
+	room_names = ["Bunks","Mess Hall","Engine","Bridge","Observations","Lab","Rec Room","Holohall","Workshop","Green Room","Salon","Terrarium"]
 	random.shuffle(room_names)
 
 	room_number = random.choice(range(4,7))
@@ -265,7 +343,7 @@ def generate_dungeon(floor_number, map_width, map_height, engine, game_mode, ite
 
 	NPC_number = random.choice(range(8,14))
 	for i in range(NPC_number):
-		room = random.choice([room for room in dungeon.rooms if dungeon.engine.player.room is not room])
+		room = random.choice([room for room in dungeon.rooms if room.name != "Shuttle" and not room.closet])
 		tiles = room.inner
 		random.shuffle(tiles)
 		for tile in tiles:
