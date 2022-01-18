@@ -214,7 +214,7 @@ class MainRoom(Room):
 
 class Closet(MainRoom):
 	min_size = 1
-	max_size = 2
+	max_size = 1
 	closet = True
 
 	@property
