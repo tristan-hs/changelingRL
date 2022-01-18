@@ -107,6 +107,22 @@ class BaseAI(Action):
                 fx += dx
                 fy += dy
 
+    def runfrom(self,tile):
+        dx,dy = (tile[0] - self.entity.x, tile[1] - self.entity.y)
+
+        if dx > 0:
+            dx = -1
+        elif dx < 0:
+            dx = 1
+
+        if dy > 0:
+            dy = -1
+        elif dy < 0:
+            dy = 1
+
+        self._intent.append(BumpAction(self.entity,dx,dy))
+
+
 
 
 class DefaultNPC(BaseAI):
@@ -146,13 +162,25 @@ class DefaultNPC(BaseAI):
 
     @property
     def fov_actors(self):
-        return [e for e in self.entity.gamemap.entities if self.entity.fov[e.x,e.y]]
+        return [e for e in self.engine.game_map.entities if self.fov[e.x,e.y]]
 
     # AI PRIORITIES ===========================
 
     @property
     def is_being_eaten(self):
         return any(isinstance(i,BeingEaten) for i in self.entity.statuses)
+
+    @property
+    def sees_a_changeling(self):
+        return any(i.changeling_form for i in self.fov_actors)
+
+    @property
+    def heard_a_sighting(self):
+        return len(self.engine.sightings)
+
+    @property
+    def needs_to_evacuate(self):
+        return self.engine.evacuation_mode
 
     @property
     def needs_to_investigate(self):
@@ -166,11 +194,21 @@ class DefaultNPC(BaseAI):
         return self.engine.turn_count - self.entity.last_peed > 240
 
     @property
+    def tazed(self):
+        return self.entity.tazed
+
+    @property
     def override(self):
-        if self.entity.tazed:
+        if self.tazed:
             return TazedNPC(self.entity,self)
         if self.is_being_eaten:
             return BeingEatenNPC(self.entity,self)
+        if self.sees_a_changeling:
+            return FightOrFleeNPC(self.entity,self)
+        if self.needs_to_evacuate:
+            return EvacuationNPC(self.entity,self)
+        if self.heard_a_sighting:
+            return InvestigateSightingNPC(self.entity,self)
         if self.needs_to_investigate:
             return InvestigationNPC(self.entity,self,self.needs_to_investigate)
         if self.has_to_pee:
@@ -180,25 +218,12 @@ class DefaultNPC(BaseAI):
     def resolve(self):
         return self
 
-
-    # shuttleless version of suspicion meter
-
-    # seeing your true form:
-        # [i]Changeling spotted in [room]!!
-        # x starts running!
-        # everyone rushes to that room
-        # if sighting confirmed, evacuation announcement
-        # if you're the person who cried, [i]False alarm folks! Let my nerves get the better of me!
-        # otherwise an investigation to find them begins
-
-    # ===== 
-    # evacuation behavior
-        # suspicion > 20 = flee 
-        # "Stay away from me until we can clear the bioscanner!"
-        # everyone tazes each other on sight
+    # todo
+        # if someone sees you subsume someone else, they'll announce an investigation on you w/ special announcement
 
     # test
         # tazing NPCs stuns them for a turn (maybe give player taze action?) and they do the voice
+        # retest clearing NPC's name w/o stun turn
 
     def decide(self):
         # clear someone's name if you tazed em and nothing else is going on
@@ -328,31 +353,24 @@ class DefaultNPC(BaseAI):
 
 
 class InvestigationNPC(DefaultNPC):
+    description = "investigating"
+    needs_to_investigate = False
+    has_to_pee = False
+
+    has_announced = False
+    subject_cleared = False
+    has_approached = False
+    subject_last_spotted = None
+
     def __init__(self,entity,parent,subject):
         super().__init__(entity,parent)
         self.subject = subject
-        self.has_announced = False
-        self.subject_cleared = False
         self.investigation_started = self.engine.turn_count
-        self.has_approached = False
-        self.subject_last_spotted = None
 
         self.engine.investigations.append(self.subject)
         self.engine.investigators.append(self.entity.name)
 
         del parent.suspicions[subject]
-
-    @property
-    def description(self):
-        return "investigating"
-
-    @property
-    def needs_to_investigate(self):
-        return False
-
-    @property
-    def has_to_pee(self):
-        return False
 
     @property
     def resolve(self):
@@ -467,29 +485,16 @@ class Changeling(DefaultNPC):
 
 class BeingEatenNPC(DefaultNPC):
     chance_to_chat=1
-
-    @property
-    def description(self):
-        return "struggling"
+    is_being_eaten = False
+    sees_a_changeling = False
+    heard_a_sighting = False
+    needs_to_evacuate = False
+    needs_to_investigate = False
+    has_to_pee = False
+    description = "struggling"
 
     def get_voice_lines(self,target=None):
         return ["Mmffhh!!!","Hrrmlllp!","*muffled sobs*"]
-
-    @property
-    def is_being_eaten(self):
-        return False
-
-    @property
-    def needs_to_investigate(self):
-        return False
-
-    @property
-    def panicking(self):
-        return False
-
-    @property
-    def has_to_pee(self):
-        return False
 
     @property
     def resolve(self):
@@ -503,29 +508,17 @@ class BeingEatenNPC(DefaultNPC):
 
 class TazedNPC(DefaultNPC):
     chance_to_chat=1
-
-    @property
-    def description(self):
-        return "stunned"
+    tazed = False
+    is_being_eaten = False
+    sees_a_changeling = False
+    heard_a_sighting = False
+    needs_to_evacuate = False
+    needs_to_investigate = False
+    has_to_pee = False
+    description = "stunned"
 
     def get_voice_lines(self,target=None):
         return ["Ow, stop that!", "Ouch!", "Back off!"]
-
-    @property
-    def is_being_eaten(self):
-        return False
-
-    @property
-    def needs_to_investigate(self):
-        return False
-
-    @property
-    def panicking(self):
-        return False
-
-    @property
-    def has_to_pee(self):
-        return False
 
     @property
     def resolve(self):
@@ -540,10 +533,8 @@ class TazedNPC(DefaultNPC):
 class PeeNPC(DefaultNPC):
     chance_to_chat = 0.1
     pee_duration = 10
-
-    @property
-    def description(self):
-        return "needs to pee"
+    description = "needs to pee"
+    has_to_pee = False
 
     def get_voice_lines(self, target=None):
         lines = []
@@ -555,10 +546,6 @@ class PeeNPC(DefaultNPC):
             lines.append(f"Think I'll take a break soon")
 
         return lines + super().get_voice_lines(target)
-
-    @property
-    def has_to_pee(self):
-        return False
 
     @property
     def resolve(self):
@@ -607,3 +594,85 @@ class PeeNPC(DefaultNPC):
         if path:
             return path[0]
 
+
+class FightOrFleeNPC(DefaultNPC):
+    chance_to_chat = 0
+    sees_a_changeling = False
+    heard_a_sighting = False
+    needs_to_evacuate = False
+    needs_to_investigate = False
+    has_to_pee = False
+    description = "fight or flight"
+    has_announced = False
+
+    @property
+    def resolve(self):
+        if not any(a.changeling_form for a in self.fov_actors):
+            return self.parent
+
+    def decide(self):
+        # if this is your first turn in fight or flight, either announce or confirm a sighting
+        if not self.has_announced:
+            sightings = [s for s in self.engine.sightings if s[0] == self.engine.player.room]
+            if len(sightings) and sightings[0][1] != self.entity.name:
+                announcement = f"[i]Confirming changeling sighting in {sightings[0][0].name}! Evacuate immediately!"
+                self.engine.evacuation_mode = True
+                self.engine.sightings = []
+                self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,announcement))
+            else:
+                if not any(s[0] == self.engine.player.room and s[1] == self.entity.name for s in sightings):
+                    announcement = f"[i]Changeling sighted in {self.engine.player.room.name}! Help!"
+                    self.engine.sightings.append((self.engine.player.room,self.entity.name,False))
+                    self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,announcement))
+            self.has_announced = True
+
+        # if it's next to you, taze it
+        if self.entity in self.engine.player.get_adjacent_actors():
+            self._intent.append(TazeAction(self.entity,self.engine.player.x-self.entity.x,self.engine.player.y-self.entity.y))
+            return
+
+        # if there are allies in sight, fight it
+        if any(not a.changeling_form and a is not self.entity for a in self.fov_actors):
+            return self.goto(self.engine.player.xy)
+
+        else:
+            return self.runfrom(self.engine.player.xy)
+
+class InvestigateSightingNPC(DefaultNPC):
+    chance_to_chat = 0
+    heard_a_sighting = False
+    needs_to_investigate = False
+    has_to_pee = False
+    description = "investigating a sighting"
+
+    # todo: player killing the sighter = false alarm
+
+    @property
+    def resolve(self):
+        if not len(self.engine.sightings):
+            return self.parent
+
+    def decide(self):
+        for s in self.engine.sightings:
+            if s[0] == self.entity.room:
+                self.engine.sightings.remove(s)
+                announcement = f"[i]Not seeing a changeling in {self.entity.room.name}. False alarm, I think."
+                self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,announcement))
+                return
+
+        self.goto(random.choice(self.engine.sightings[-1][0].tiles))
+
+
+class EvacuationNPC(DefaultNPC):
+    needs_to_evacuate = False
+    heard_a_sighting = False
+    needs_to_investigate = False
+    has_to_pee = False
+    description = "evacuating"
+
+    @property
+    def resolve(self):
+        return
+
+    def decide(self):
+        self.goto(self.engine.game_map.upstairs_location)

@@ -138,7 +138,7 @@ class TazeAction(ActionWithDirection):
         self.engine.message_log.add_message(attack_desc, color.cyan)
 
         self.entity.ai.just_tazed = target
-        Tazed(target)
+        # Tazed(target)
         if target is self.engine.player:
             target.take_damage(12)
 

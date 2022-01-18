@@ -40,6 +40,7 @@ class Engine:
         self.meta.do_combat_confirm = False
         self.investigations = []
         self.investigators = []
+        self.sightings = []
         self.evacuation_mode = False
 
         self.history = []
