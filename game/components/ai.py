@@ -617,7 +617,9 @@ class FightOrFleeNPC(DefaultNPC):
                 if not any(s[0] == self.engine.player.room and s[1] == self.entity.name for s in sightings):
                     announcement = f"[i]Changeling sighted in {self.engine.player.room.name}! Help!"
                     self.engine.sightings.append((self.engine.player.room,self.entity.name,False))
-                    self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,announcement))
+                else:
+                    announcement = "*screams*"
+                self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,announcement))
             self.has_announced = True
 
         # if it's next to you, taze it
@@ -639,8 +641,6 @@ class InvestigateSightingNPC(DefaultNPC):
     has_to_pee = False
     description = "investigating a sighting"
     short_description = "Θ"
-
-    # todo: player killing the sighter = false alarm
 
     @property
     def resolve(self):
