@@ -382,7 +382,7 @@ class TutorialConfirm(EventHandler):
         super().__init__(engine)
         engine.meta.log_tutorial_event(prompt)
         self.prompt = {
-            'new game': "Welcome to the game!\n\nMovement controls are shown in the bottom left. You can also move with the numpad and wait with (.) or (5).\n\n(If you wish to disable these tips, access the menu with ESC)",
+            'new game': "Welcome to ChangelingRL!\n\nMove with the num pad or the vim keys! For more info, press ?",
         }[prompt]
 
     def on_render(self,console):
