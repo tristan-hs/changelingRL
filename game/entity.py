@@ -338,6 +338,9 @@ class Actor(Entity):
         if any(isinstance(i,Eating) and i.contingent != target for i in self.statuses):
             self.cancel_eat()
 
+        if self.is_dismantling:
+            self.cancel_eat()
+
         if any(isinstance(i,Eating) and i.contingent == target for i in self.statuses):
             return
 
@@ -348,8 +351,13 @@ class Actor(Entity):
         )
 
     def dismantle(self):
+        self.cancel_eat()
         Dismantling(self)
         self.engine.message_log.add_message("You begin dismantling the bioscanner.")
+
+    @property
+    def is_dismantling(self):
+        return any(isinstance(i,Dismantling) for i in self.statuses)
 
     def cancel_eat(self):
         eat_status = [i for i in self.statuses if isinstance(i,Eating)]

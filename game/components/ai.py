@@ -187,6 +187,9 @@ class DefaultNPC(BaseAI):
         for n in self.suspicions.keys():
             if self.suspicions[n] > 100 and n not in self.engine.investigations:
                 return n
+        for a in self.fov_actors:
+            if a.is_dismantling:
+                return a.name
         return False
 
     @property
@@ -363,7 +366,8 @@ class InvestigationNPC(DefaultNPC):
         self.engine.investigations.append(self.subject)
         self.engine.investigators.append(self.entity.name)
 
-        del parent.suspicions[subject]
+        if subject in parent.suspicions:
+            del parent.suspicions[subject]
 
     @property
     def resolve(self):
