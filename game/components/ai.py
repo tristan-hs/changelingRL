@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 class BaseAI(Action):
 
     _intent = None
+    short_description = ''
 
     @property
     def intent(self) -> Optional[List[Action]]:
@@ -128,6 +129,9 @@ class BaseAI(Action):
 class DefaultNPC(BaseAI):
     chance_to_chat = 0.2
 
+    description = "content"
+    short_description = "☺"
+
     def __init__(self, entity: Actor, parent=None):
         super().__init__(entity)
         self.path = None
@@ -137,10 +141,6 @@ class DefaultNPC(BaseAI):
         self.suspicions = {}
         self.found = []
         self.just_tazed = None
-
-    @property
-    def description(self):
-        return "content"
 
     @property
     def missing_persons(self):
@@ -354,6 +354,7 @@ class DefaultNPC(BaseAI):
 
 class InvestigationNPC(DefaultNPC):
     description = "investigating"
+    short_description = "Θ"
     needs_to_investigate = False
     has_to_pee = False
 
@@ -449,35 +450,24 @@ class InvestigationNPC(DefaultNPC):
 
 
 class Changeling(DefaultNPC):
-    @property
-    def description(self):
-        return "hungry"
-
-    @property
-    def missing_persons(self):
-        return []
+    description = "hungry"
+    short_description = '☻'
+    missing_persons = []
+    tazed = False
+    is_being_eaten = False
+    sees_a_changeling = False
+    heard_a_sighting = False
+    needs_to_evacuate = False
+    needs_to_investigate = False
+    has_to_pee = False
+    override = None
+    resolve = None
 
     def get_voice_lines(self):
         if not self.changeling_form:
             return super().get_voice_lines()
         else:
             return ["Rlyxhheehhhxxxsss","SSSLlslllLLlLlurRRRRP", "hhhh", "*schlorp*", "..."]
-
-    @property
-    def needs_to_investigate(self):
-        return False
-
-    @property
-    def has_to_pee(self):
-        return False
-
-    @property
-    def override(self):
-        return
-
-    @property
-    def resolve(self):
-        return
 
     def decide(self):
         return
@@ -492,6 +482,7 @@ class BeingEatenNPC(DefaultNPC):
     needs_to_investigate = False
     has_to_pee = False
     description = "struggling"
+    short_description = "D:"
 
     def get_voice_lines(self,target=None):
         return ["Mmffhh!!!","Hrrmlllp!","*muffled sobs*"]
@@ -516,6 +507,7 @@ class TazedNPC(DefaultNPC):
     needs_to_investigate = False
     has_to_pee = False
     description = "stunned"
+    short_description = "*_*"
 
     def get_voice_lines(self,target=None):
         return ["Ow, stop that!", "Ouch!", "Back off!"]
@@ -534,6 +526,7 @@ class PeeNPC(DefaultNPC):
     chance_to_chat = 0.1
     pee_duration = 10
     description = "needs to pee"
+    short_description = "☺'"
     has_to_pee = False
 
     def get_voice_lines(self, target=None):
@@ -603,6 +596,7 @@ class FightOrFleeNPC(DefaultNPC):
     needs_to_investigate = False
     has_to_pee = False
     description = "fight or flight"
+    short_description = '!'
     has_announced = False
 
     @property
@@ -644,6 +638,7 @@ class InvestigateSightingNPC(DefaultNPC):
     needs_to_investigate = False
     has_to_pee = False
     description = "investigating a sighting"
+    short_description = "Θ"
 
     # todo: player killing the sighter = false alarm
 
@@ -669,6 +664,7 @@ class EvacuationNPC(DefaultNPC):
     needs_to_investigate = False
     has_to_pee = False
     description = "evacuating"
+    short_description = "→"
 
     @property
     def resolve(self):
