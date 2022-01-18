@@ -165,12 +165,14 @@ def render_names_at_mouse_location(
     mouse_x, mouse_y = engine.mouse_location
     x,y = (61,17)
 
-    room = engine.game_map.room_at_location(mouse_x,mouse_y)
-    # room += f" {mouse_x},{mouse_y}"
-    console.print(61,16,room,fg=color.grey)
-
     if not engine.game_map.in_bounds(mouse_x, mouse_y):
         return
+
+    room = engine.game_map.room_at_location(mouse_x,mouse_y)
+    if engine.game_map.visible[mouse_x,mouse_y]:
+        console.print(61,16,room,fg=color.grey)
+    else:
+        y -= 1
 
     entities = engine.mouse_things
 
