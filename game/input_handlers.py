@@ -376,6 +376,9 @@ class Confirm(EventHandler):
         elif event.sym == tcod.event.K_y:
             return self.callback()
 
+    def ev_mousemotion(self,event):
+        pass
+
 
 class TutorialConfirm(EventHandler):
     def __init__(self,engine,prompt):
