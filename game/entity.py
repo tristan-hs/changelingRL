@@ -13,7 +13,7 @@ from game import color as Color
 
 from game.components.inventory import Inventory
 from game.components import consumable
-from game.components.status_effect import Eating, BeingEaten, Tazed, Dismantling
+from game.components.status_effect import Eating, BeingEaten, Tazed, Dismantling, KeyHolder
 from game.components.ai import Changeling, DefaultNPC
 
 from game.render_functions import DIRECTIONS
@@ -355,6 +355,11 @@ class Actor(Entity):
         Dismantling(self)
         self.engine.message_log.add_message("You begin dismantling the bioscanner.")
 
+    def unlock(self):
+        self.cancel_eat()
+        self.engine.message_log.add_message("You unlock the gate!",Color.purple)
+        self.engine.gate_unlocked = True
+
     @property
     def is_dismantling(self):
         return any(isinstance(i,Dismantling) for i in self.statuses)
@@ -368,12 +373,18 @@ class Actor(Entity):
         if len(dismantle_status):
             dismantle_status[0].cancel()
 
+    @property
+    def is_keyholder(self):
+        return any(isinstance(i,KeyHolder) for i in self.statuses)
+
     def morph_into(self,target):
         self.schedule = target.schedule
         self.name = target.name
         self.changeling_form = False
         self.ai = DefaultNPC(self)
         self.bump_index = 1
+        if target.is_keyholder:
+            KeyHolder(self)
 
         self.engine.message_log.add_message(
             "Your transformation is complete.", self.color

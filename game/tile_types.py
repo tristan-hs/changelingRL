@@ -111,6 +111,14 @@ gate = new_tile(
     dark=(ord("░"), (50,50,50), (5,5,5)),
     light=(ord("░"), (75,150,75), (10,10,10))
 )
+locked_gate = new_tile(
+    name='locked gate',
+    flavor='The only way into the evacuation area. Subsume a keyholder and dismantle the bioscanner to gain access.',
+    walkable=False,
+    transparent=True,
+    dark=(ord("="),(50,50,50),(5,5,5)),
+    light=(ord("="),(75,150,75),(10,10,10))
+)
 fence = new_tile(
     name='fence',
     flavor='A sturdy barrier.',

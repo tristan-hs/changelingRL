@@ -84,7 +84,9 @@ def render_run_info(
     if not player.changeling_form:
         console.draw_frame(60,3,9,4)
         console.print_box(61,3,2,1,"ID")
-        console.print_box(61,4,7,2,player.name,fg=player.color)
+        console.print_box(61,4,7,1,player.name,fg=player.color)
+        if player.is_keyholder:
+            console.print_box(61,5,7,1,"KEYHOLD",fg=color.grey)
     else:
         console.draw_frame(60,3,12,4,fg=color.changeling)
         name = "changeling\n░░░░░░░░░░"
@@ -195,6 +197,8 @@ def render_names_at_mouse_location(
             sd = entity.ai.short_description
             fg = entity.color
             console.print(79-len(sd),y,sd,fg=fg)
+            if entity.is_keyholder:
+                console.print(79-len(sd)-2,y,'╒',fg=color.grey)
             x_mod = 0
         
         name = name if len(name) < 13 else name[:10]+'..'
@@ -229,6 +233,8 @@ def print_fov_actors(console,player,xy):
 
             sd = actor.ai.short_description
             console.print(79-len(sd),y,sd,fg=fg)
+            if actor.is_keyholder:
+                console.print(79-len(sd)-2,y,'╒',fg=color.grey)
             y += 1
             if y > 22:
                 console.print(x+1,y,'...',fg=color.offwhite)

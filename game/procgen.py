@@ -14,6 +14,7 @@ from game import entity_factories, tile_types
 from game.game_map import GameMap
 from game.render_functions import DIRECTIONS
 from game.components.ai import PeeNPC
+from game.components.status_effect import KeyHolder
 
 if TYPE_CHECKING:
 	from game.engine import Engine
@@ -221,7 +222,7 @@ class ShuttleRoom(MainRoom):
 			self.dungeon.tiles[tile] = tile_types.evac_area
 		for tile in self.fence:
 			self.dungeon.tiles[tile] = tile_types.wall
-		self.dungeon.tiles[self.gate] = tile_types.gate
+		self.dungeon.tiles[self.gate] = tile_types.locked_gate
 		self.dungeon.tiles[self.bioscanner] = tile_types.bioscanner
 		self.dungeon.shuttle = self
 
@@ -352,6 +353,9 @@ def generate_dungeon(floor_number, map_width, map_height, engine, game_mode, ite
 				continue
 			entity_factories.NPC.spawn(dungeon,*tile)
 			break
+
+	kh = random.choice(dungeon.actors)
+	KeyHolder(kh)
 
 	return dungeon
 

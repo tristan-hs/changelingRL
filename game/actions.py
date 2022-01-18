@@ -199,6 +199,8 @@ class MovementAction(ActionWithDirection):
         if not self.engine.game_map.tile_is_walkable(*self.dest_xy):
             if self.entity is self.engine.player and self.dest_xy == self.engine.game_map.shuttle.bioscanner and not self.engine.bioscanner_dismantled:
                 return self.entity.dismantle()
+            elif self.entity.is_keyholder and self.dest_xy == self.engine.game_map.shuttle.gate and not self.engine.gate_unlocked:
+                return self.entity.unlock()
             else:
                 raise exceptions.Impossible("That way is blocked.")
 

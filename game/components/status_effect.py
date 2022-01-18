@@ -124,3 +124,11 @@ class Tazed(StatusEffect):
 
 	def remove(self):
 		self.parent.statuses.remove(self)
+
+
+class KeyHolder(StatusEffect):
+	color=color.grey
+	description="keyholder"
+
+	def decrement(self):
+		pass

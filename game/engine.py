@@ -44,11 +44,25 @@ class Engine:
         self.sightings = []
         self.evacuation_mode = False
         self._bioscanner_dismantled = False
+        self._gate_unlocked = False
 
         self.history = []
 
     def log_run(self):
         self.meta.log_run(self.history)
+
+    @property
+    def gate_unlocked(self):
+        return self._gate_unlocked
+
+    @gate_unlocked.setter
+    def gate_unlocked(self, new_val):
+        self._gate_unlocked = new_val
+        if new_val:
+            if not self.bioscanner_dismantled:
+                self.game_map.tiles[self.game_map.shuttle.gate] = tile_types.gate
+            else:
+                self.game_map.tiles[self.game_map.shuttle.gate] = tile_types.floor
 
     @property
     def bioscanner_dismantled(self):
@@ -59,7 +73,8 @@ class Engine:
         self._bioscanner_dismantled = new_val
         if new_val:
             self.game_map.tiles[self.game_map.shuttle.bioscanner] = tile_types.dismantled_bioscanner
-            self.game_map.tiles[self.game_map.shuttle.gate] = tile_types.floor
+            if self.gate_unlocked:
+                self.game_map.tiles[self.game_map.shuttle.gate] = tile_types.floor
 
     # field of view
     @property
