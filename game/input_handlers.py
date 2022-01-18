@@ -727,13 +727,11 @@ class HelpMenuHandler(AskUserEventHandler):
     def __init__(self,engine:Engine):
         super().__init__(engine)
 
-        # moving, enemies, constriction, items, stats, other
         self.rows = [
-            (0,'movement',help_pages.moving),
-            (1,'enemies', help_pages.enemies),
-            (2,'items', help_pages.items),
-            (3,'stats', help_pages.stats),
-            (4,'other', help_pages.other)
+            (0,'basics',help_pages.basics),
+            (1,'goal', help_pages.goal),
+            (2,'ui', help_pages.ui),
+            (3,'humans', help_pages.humans)
         ]
         self.cursor = 0
 

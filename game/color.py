@@ -33,6 +33,8 @@ purple = (0x9F, 0x3F, 0xFF)
 # snakey messages
 green = (0,200,0)
 
+npc = (120,150,120)
+
 # enemy colors only on notice
 # red overrides everything
 # segment colors prominent

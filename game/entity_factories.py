@@ -15,7 +15,7 @@ player = Actor(
 )
 
 NPC = Actor(
-	color=(120,150,120),
+	color=color.npc,
 	ai_cls=ai.DefaultNPC,
 	render_order=RenderOrder.ACTOR,
 	description="a foolish human"
