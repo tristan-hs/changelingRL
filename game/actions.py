@@ -201,6 +201,11 @@ class MovementAction(ActionWithDirection):
 
         self.entity.move(self.dx,self.dy)
 
+        if self.entity is self.engine.player and self.entity.xy == self.engine.game_map.shuttle.gate and not self.engine.bioscanner_dismantled:
+            self.engine.message_log.add_message("CHANGELING DETECTED", color.yellow)
+            self.engine.message_log.add_message("Electric currents from the bioscanner fry your alien brain.", color.offwhite)
+            self.engine.player.take_damage(100)
+
 
 class WaitAction(Action):
     def perform(self) -> None:

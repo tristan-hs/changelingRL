@@ -42,6 +42,7 @@ class Engine:
         self.investigators = []
         self.sightings = []
         self.evacuation_mode = False
+        self.bioscanner_dismantled = False
 
         self.history = []
 

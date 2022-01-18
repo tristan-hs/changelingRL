@@ -223,6 +223,7 @@ class ShuttleRoom(MainRoom):
 			self.dungeon.tiles[tile] = tile_types.wall
 		self.dungeon.tiles[self.gate] = tile_types.gate
 		self.dungeon.tiles[self.bioscanner] = tile_types.bioscanner
+		self.dungeon.shuttle = self
 
 	def generate(self):
 		super().generate()

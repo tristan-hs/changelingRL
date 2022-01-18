@@ -364,6 +364,8 @@ class Actor(Entity):
         )
 
     def ooze(self):
+        if not self.is_alive:
+            return
         self.changeling_form = True
         self.ai = Changeling(self)
         self.engine.message_log.add_message("You ooze into your true form.", Color.changeling)

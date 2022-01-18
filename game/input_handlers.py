@@ -182,7 +182,8 @@ class EventHandler(BaseEventHandler):
 
         else:
             self.engine.player.just_took_damage = False
-            self.engine.handle_enemy_turns()
+            if self.engine.player.is_alive:
+                self.engine.handle_enemy_turns()
 
         self.engine.update_fov()
         return True
