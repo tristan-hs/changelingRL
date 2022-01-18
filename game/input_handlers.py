@@ -161,10 +161,8 @@ class EventHandler(BaseEventHandler):
             if not self.engine.player.is_alive:
                 # The player was killed sometime during or after the action.
                 return GameOverEventHandler(self.engine)
-            if self.engine.in_combat and not self.engine.confirmed_in_combat and self.engine.meta.do_combat_confirm:
-                return ConfirmCombatHandler(self.engine)
-            if not self.engine.in_combat and self.engine.confirmed_in_combat:
-                self.engine.confirmed_in_combat = False
+            if self.engine.player.room.name == "Shuttle" and self.engine.player.xy in self.engine.player.room.evac_area:
+                return VictoryEventHandler(self.engine)
             return MainGameEventHandler(self.engine)  # Return to the main handler.
         return self
 
@@ -440,6 +438,14 @@ class GameOverEventHandler(EventHandler):
             return self.on_quit()
 
 
+class VictoryEventHandler(GameOverEventHandler):
+    def __init__(self,engine):
+        super().__init__(engine,False)
+        self.engine.message_log.add_message(
+            "You made it to the shuttle! Civilization, here you come.", color.purple
+        )
+
+
 class GameOverStatScreen(EventHandler):
     def ev_quit(self, event: tcod.event.Quit):
         return self.on_quit()
@@ -453,26 +459,25 @@ class GameOverStatScreen(EventHandler):
 
     def on_render(self,console):
         history = self.engine.history
-        uses = [i for i in history if i[0] in ['use item']]
         kills = [i for i in history if i[0] == 'kill enemy']
 
         if not self.engine.player.is_alive:
-            console.print(1,1,"R.I.P.",color.red)
-            console.print(8,1,self.engine.player.name,color.player)
+            console.print(1,1,"R.I.P.",color.dark_red)
+            console.print(8,1,"changeling",color.changeling)
 
             cod = self.engine.player.cause_of_death
             a = 'a '
-            console.print(1,3,f"Died on floor {self.engine.game_map.floor_number} to {a}{cod}",color.red)
+            console.print(1,3,f"Died in the {self.engine.player.room.name}.",color.red)
 
         else:
-            console.print(1,1,"Congratulations ",color.purple)
-            console.print(17,1,f"{pname}",color.player)
+            console.print(1,1,"Congratulations, ",color.purple)
+            console.print(18,1,f"changeling",color.changeling)
 
-            console.print(1,3,f"Beat the Game!",color.purple)
+            console.print(1,3,f"Made it to the shuttle!",color.purple)
         
         console.print(1,5,"Along the way:",color.offwhite)
-        console.print(3,6,f"- Used {len(uses)} items",color.offwhite)
-        console.print(3,7,f"- Killed {len(kills)} foes",color.offwhite)
+        s = '' if len(kills) == 1 else 's'
+        console.print(3,7,f"- Ate {len(kills)} human{s}",color.offwhite)
 
         console.print(1,12,f"Turn count: {self.engine.turn_count}")
 
