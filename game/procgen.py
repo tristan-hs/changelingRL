@@ -279,6 +279,12 @@ class ShuttleRoom(MainRoom):
 		bio_i = random.choice([i for i in [gate_i-1,gate_i] if i > -1 and i < len(self.fence)])
 		self.bioscanner = self.fence.pop(bio_i)
 
+		self.lobby = set(self.inner)
+		for i in [self.evac_area,self.fence]:
+			self.lobby -= set(i)
+		self.lobby -= set([self.bioscanner,self.gate])
+		self.lobby = list(self.lobby)
+
 
 class Closet(MainRoom):
 	min_size = 1
@@ -315,7 +321,8 @@ def generate_dungeon(floor_number, map_width, map_height, engine, game_mode, ite
 	room_names = ["Bunks","Mess Hall","Engine","Bridge","Observations","Lab","Rec Room","Holohall","Workshop","Green Room","Salon","Terrarium"]
 	random.shuffle(room_names)
 
-	room_number = random.choice(range(4,7))
+	room_number = random.choice(range(4,12))
+	main_rooms = []
 	for i in range(room_number):
 		attempts = 1000
 		for i in range(attempts):
@@ -326,10 +333,11 @@ def generate_dungeon(floor_number, map_width, map_height, engine, game_mode, ite
 			room.name = room_names.pop()
 			room.finalize()
 			room.add_closet()
+			main_rooms.append(room)
 			break
 	
 	toilets = [room for room in dungeon.rooms if room.closet]
-	if not toilets:
+	if len(toilets) < 2 or len(main_rooms) < 4:
 		return generate_dungeon(floor_number,map_width,map_height,engine,game_mode,items)
 
 	starting_toilet = random.choice(toilets)

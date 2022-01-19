@@ -325,9 +325,9 @@ class Actor(Entity):
         times = {8,12,18,22}
         schedule = {}
         for time in times:
-            location = random.choice(self.gamemap.rooms)
-            while location.name == "Main Hall" or location.closet or location in schedule.values():
-                location = random.choice(self.gamemap.rooms)
+            shuttle_guards = len([a for a in self.gamemap.actors if time in a.schedule and a.schedule[time] == self.gamemap.shuttle])
+            shift_rooms = [r for r in self.gamemap.rooms if r.name not in ["Shuttle","Main Hall"] and not r.closet and r not in schedule.values()]
+            location = random.choice(shift_rooms) if self.gamemap.shuttle in schedule.values() or shuttle_guards > 1 else self.gamemap.shuttle
             schedule[time] = location
         self.schedule = schedule
 

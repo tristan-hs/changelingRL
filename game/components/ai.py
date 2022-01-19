@@ -262,7 +262,7 @@ class DefaultNPC(BaseAI):
 
         # decide on my target
         if self.entity.room is not self.entity.scheduled_room and not self.target_tile:
-            self.target_tile = random.choice(self.entity.scheduled_room.inner)
+            self.target_tile = random.choice(self.entity.scheduled_room.inner) if self.entity.scheduled_room is not self.engine.game_map.shuttle else random.choice(self.engine.game_map.shuttle.lobby)
 
         self.mosey()
 
@@ -437,7 +437,7 @@ class InvestigationNPC(DefaultNPC):
         # failing that, pick a room
         if not self.target_tile:
             room = random.choice(self.engine.game_map.rooms)
-            self.target_tile = random.choice(room.inner)
+            self.target_tile = random.choice(room.inner) if room is not self.engine.game_map.shuttle else random.choice(room.lobby)
 
         # and go there
         if self.target_tile:
