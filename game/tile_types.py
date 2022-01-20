@@ -82,8 +82,8 @@ wall = new_tile(
     flavor='Solid inanimate material.',
     walkable=False,
     transparent=False,
-    dark=(ord(" "), (255, 255, 255), (25,0,25)),
-    light=(ord(" "), (255, 255, 255), (50,0,50)),
+    dark=(ord(" "), (255, 255, 255), (25,25,30)),
+    light=(ord(" "), (255, 255, 255), (50,50,60)),
 )
 down_stairs = new_tile(
     name='stairs',
