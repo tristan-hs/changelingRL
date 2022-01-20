@@ -254,7 +254,11 @@ class DefaultNPC(BaseAI):
                 else:
                     self.suspicions[p.name] += 1
                     if self.suspicions[p.name] == 50:
-                        self._intent.append(TalkAction(self.entity,0,0,f"[i]{p.name}, you're missed in the {self.entity.room.name}. Please report in."))
+                        self._intent.append(TalkAction(self.entity,0,0,random.choice([
+                            f"[i]{p.name}, you're missed in the {self.entity.room.name}. Please report in.",
+                            f"[i]If anybody sees {p.name}, tell them to get to the {self.entity.room.name}, stat!",
+                            f"[i]{p.name} to the {self.entity.room.name} please. Double time."
+                        ])))
             else:
                 self.suspicions[p.name] = 1
 
@@ -291,24 +295,58 @@ class DefaultNPC(BaseAI):
         lines = []
 
         if not target:
-            lines.append("Ha, I just had a great idea!")
+            lines.append(random.choice([
+                "Ha, I just had a great idea!",
+                "Hmm..."
+            ]))
 
         if self.target_tile and self.entity.room is not self.entity.scheduled_room:
             room = [room for room in self.entity.gamemap.rooms if self.target_tile in room.inner][0]
-            lines.append(f"Excuse me, I've got to get to the {room.name}.")
+            lines.append(random.choice([
+                f"Excuse me, I've got to get to the {room.name}.",
+                "Gotta go!",
+                f"The {room.name} isn't gonna {room.name} itself!"
+            ]))
+
         elif self.entity.room is self.entity.scheduled_room:
-            lines.append(f"*whistles*")
+            lines.append(random.choice([
+                f"*whistles*",
+                "*human noises*"
+            ]))
 
         if self.entity.room is not self.entity.scheduled_room and target:
             lines.append(f"Hello there, {target.name}!")
             lines.append(f"{target.name}! Good to see you.")
 
         for p in self.missing_persons:
-            lines.append(f"I wonder where {p.name} is.")
-            lines.append(f"{p.name} is usually here this time of day...")
+            if p.name in self.suspicions and self.suspicions[p.name] > 25:
+                lines.append(f"I wonder where {p.name} is.")
+                lines.append(f"{p.name} is usually here this time of day...")
 
         for n in self.suspicions.keys():
-            lines.append(f"{n} has been acting strange lately.")
+            if self.suspicions[n] > 50:
+                lines.append(f"{n} has been acting strange lately.")
+                lines.append(f"Wonder what {n} has been up to. Uncool to worry everyone like that.")
+                lines.append(f"Imagine just not showing up for your shift.")
+
+        for i in self.engine.investigations:
+            lines.append(f"I hope {i} is okay...")
+            lines.append(f"Jeez, if {i} doesn't turn up soon we'll have to evacuate.")
+            lines.append(f"{i} had better have a good explanation for disappearing.")
+
+        for i in self.engine.investigators:
+            lines.append(f"I wonder if {i} will find what they're looking for.")
+            lines.append(f"I saw {i} wandering around. Looking for someone, I guess.")
+            lines.append(f"{i}'s on the move. Guess someone went missing.")
+
+        if len(self.engine.investigations) > 1:
+            keyholder = [a for a in self.engine.game_map.actors if a.is_keyholder and a is not self.engine.player]
+            if len(keyholder):
+                kh = keyholder[0]
+                lines.append(f"With all these disappearances, {kh} should just start the evacuation.")
+                lines.append(f"I hope {kh} is staying safe. Things are getting weird.")
+            lines.append("Something really strange is going on.")
+            lines.append("What a mess. If the bioscanner's intact, we should just leave.")
 
 
         return lines
@@ -382,7 +420,11 @@ class InvestigationNPC(DefaultNPC):
         investigation_duration = self.engine.turn_count - self.investigation_started
 
         if investigation_duration > 480:
-            announcement = f"[i]After a full day, {self.subject} has eluded me. Begin evacuation procedure. Trust no one."
+            announcement = random.choice([
+                f"[i]After a full day, {self.subject} has eluded me. Begin evacuation procedure. Trust no one.",
+                f"[i]I'm afraid my investigation has been unsuccessful. Please make your way to the Shuttle for evacution.",
+                f"[i]{self.subject} has been missing for 24 hours. Sorry everyone. It's time to go home."
+            ])
             self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,announcement))
             self.engine.investigations.remove(self.subject)
             self.engine.investigators.remove(self.entity.name)
@@ -400,7 +442,11 @@ class InvestigationNPC(DefaultNPC):
     def decide(self):
         # announce your investigation when it starts
         if not self.has_announced:
-            announcement = f"[i]{self.subject} is hereby under investigation. If seen, taze them on sight!"
+            announcement = random.choice([
+                f"[i]{self.subject} is hereby under investigation. If seen, taze them on sight!",
+                f"[i]Warning all personnel: {self.subject} is missing. Have tazers ready in case they turn up.",
+                f"[i]Changeling procedures everyone. {self.subject} is to be tazed on sight in case of infection."
+            ])
             self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,announcement))
             self.has_announced = True
 
@@ -417,7 +463,12 @@ class InvestigationNPC(DefaultNPC):
         if self.subject in [a.name for a in self.fov_actors]:
             self.subject_last_spotted = [a for a in self.fov_actors if a.name == self.subject][0].xy
             if not self.has_approached:
-                self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,f"{self.subject}! Hold still for a second, let me verify you!"))
+                vl = random.choice([
+                    f"{self.subject}! Hold still for a second, let me verify you!",
+                    f"Sorry, {self.subject}, but it's procedure. I'm gonna have to taze you.",
+                    f"Hey, wait! {self.subject}! Come here!"
+                ])
+                self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,vl))
                 self.has_approached = True
 
             return self.taze(self.subject_last_spotted)
@@ -479,7 +530,7 @@ class BeingEatenNPC(DefaultNPC):
     short_description = "D:"
 
     def get_voice_lines(self,target=None):
-        return ["Mmffhh!!!","Hrrmlllp!","*muffled sobs*"]
+        return ["Mmffhh!!!","Hrrmlllp!","*muffled sobs*","...gkh!","*choking*","*gurgling*","KKhhhhh...."]
 
     @property
     def resolve(self):
@@ -607,16 +658,24 @@ class FightOrFleeNPC(DefaultNPC):
         if not self.has_announced:
             sightings = [s for s in self.engine.sightings if s[0] == self.engine.player.room]
             if len(sightings) and sightings[0][1] != self.entity.name:
-                announcement = f"[i]Confirming changeling sighting in {sightings[0][0].name}! Evacuate immediately!"
+                announcement = random.choice([
+                    f"[i]Confirming changeling sighting in {sightings[0][0].name}! Evacuate immediately!",
+                    f"[i]Yep, that's a changeling! Keyholder to Shuttle, now!!",
+                    f"[i]Changeling confirmed in {sightings[0][0].name}! Mother of god, get everyone OUT!"
+                ])
                 self.engine.evacuation_mode = True
                 self.engine.sightings = []
                 self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,announcement))
             else:
                 if not any(s[0] == self.engine.player.room and s[1] == self.entity.name for s in sightings):
-                    announcement = f"[i]Changeling sighted in {self.engine.player.room.name}! Help!"
+                    announcement = random.choice([
+                        f"[i]Changeling sighted in {self.engine.player.room.name}! Help!",
+                        f"[i]HELP! IT'S ONE OF THOSE THINGS! COME TO {self.engine.player.room.name}!",
+                        f"[i]S-someone come to {self.engine.player.room.name}! It's grotesque!"
+                    ])
                     self.engine.sightings.append((self.engine.player.room,self.entity.name,False))
                 else:
-                    announcement = "*screams*"
+                    announcement = random.choice(["*screams*", "What is that thing?!", "BACK, DEMON!!", "Is it real!!?"])
                 self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,announcement))
             self.has_announced = True
 
@@ -648,9 +707,13 @@ class InvestigateSightingNPC(DefaultNPC):
     def decide(self):
         for s in self.engine.sightings:
             if s[0] == self.entity.room and s[1] != self.entity.name:
-                self.engine.sightings.remove(s)
-                announcement = f"[i]Not seeing a changeling in {self.entity.room.name}. False alarm, I think."
+                announcement = random.choice([
+                    f"[i]Not seeing a changeling in {s[0].name}. False alarm, I think.",
+                    f"[i]Uhh, False alarm. I think {s[1]} has just been at the facility too long.",
+                    f"[i]Sorry, {s[1]}, not seeing a changeling in the {s[0].name}."
+                ])
                 self._intent.append(TalkAction(self.entity,self.entity.x,self.entity.y,announcement))
+                self.engine.sightings.remove(s)
                 return
 
         self.goto(random.choice(self.engine.sightings[-1][0].tiles))
@@ -670,6 +733,14 @@ class EvacuationNPC(DefaultNPC):
 
     def decide(self):
         if not self.engine.gate_unlocked:
+            vl = random.choice([
+                "*worried muttering*",
+                "Get out in the open until the shuttle is unlocked!",
+                "Oh god, it's happening!"
+            ])
+            if random.random() < 0.05:
+                self._intent.append(TalkAction(self.entity,0,0,vl))
+
             if self.entity.is_keyholder:
                 self.goto_gate()
             elif self.entity.id % 2 == 0:
@@ -680,12 +751,20 @@ class EvacuationNPC(DefaultNPC):
             else:
                 self.goto(random.choice([r for r in self.engine.game_map.rooms if r.name == "Main Hall"][0].inner))
         else:
+            vl = random.choice([
+                "Home free!",
+                "At last we can get out of here!",
+                "I hope that thing isn't with us..."
+            ])
+            if random.random() < 0.05:
+                self._intent.append(TalkAction(self.entity,0,0,vl))
+
             self.goto(random.choice(self.engine.game_map.shuttle.evac_area))
 
     def goto_gate(self):
         # if I'm next to the gate, unlock it, else
         if self.entity.distance(*self.engine.game_map.shuttle.gate) < 2:
-            self.engine.message_log.add_message(f"{self.entity.name} unlocks the shuttle gate!", color.yellow)
+            self._intent.append(TalkAction(self.entity,0,0,f"[i]I'm unlocking the Shuttle gate. We're home free!"))
             self.engine.gate_unlocked = True
             return
         
