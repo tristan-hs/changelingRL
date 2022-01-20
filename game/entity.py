@@ -396,7 +396,6 @@ class Actor(Entity):
         )
 
         for a in self.fov_actors:
-            print(f"adding to {a.name}'s known changeling list")
             a.known_changelings.append(self.name)
 
     def ooze(self):

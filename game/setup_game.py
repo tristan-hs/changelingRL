@@ -146,8 +146,7 @@ class MainMenu(input_handlers.BaseEventHandler):
         return None
 
     def start_new_game(self):
-        return input_handlers.MainGameEventHandler(new_game(self.meta))
-
+        raise exceptions.NewGame(self.meta)
 
 class SubMenu(input_handlers.BaseEventHandler):
     def __init__(self, parent):

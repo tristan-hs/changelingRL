@@ -61,6 +61,13 @@ def main() -> None:
                             context.convert_event(event)
                             handler = handler.handle_events(event)
 
+                    except exceptions.NewGame as e:
+                        root_console.clear()
+                        root_console.print(32,24,"Loading level...")
+                        context.present(root_console)
+
+                        handler = input_handlers.MainGameEventHandler(setup_game.new_game(e.meta))
+
                     except exceptions.ToggleFullscreen:
                         toggle_fullscreen(context)
                         if hasattr(handler,'engine'):

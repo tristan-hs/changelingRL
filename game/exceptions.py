@@ -20,3 +20,8 @@ class QuitToMenu(Exception):
 
 class PickBumpType(Exception):
 	"""Player needs to pick what happens when they bump"""
+
+class NewGame(Exception):
+	def __init__(self,meta):
+		super().__init__()
+		self.meta = meta
