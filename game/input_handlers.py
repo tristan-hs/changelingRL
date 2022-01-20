@@ -500,6 +500,18 @@ class GameOverStatScreen(EventHandler):
 
         console.print(1,12,f"Turn count: {self.engine.turn_count}")
 
+        console.draw_frame(40,1,38,48)
+        console.print_box(41,1,38,1,"LOG")
+        self.engine.message_log.render_messages(
+            console,
+            41,
+            2,
+            36,
+            46,
+            self.engine.message_log.messages,
+            False
+        )
+
 
 class HistoryViewer(EventHandler):
     """Print the history on a larger window which can be navigated."""
