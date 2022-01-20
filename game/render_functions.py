@@ -198,7 +198,7 @@ def render_names_at_mouse_location(
             fg = entity.color
             console.print(79-len(sd),y,sd,fg=fg)
             if entity.is_keyholder:
-                console.print(79-len(sd)-2,y,'╒',fg=color.grey)
+                console.print(79-len(sd)-3,y,'o╖',fg=color.grey)
             x_mod = 0
         
         name = name if len(name) < 13 else name[:10]+'..'
@@ -234,7 +234,7 @@ def print_fov_actors(console,player,xy):
             sd = actor.ai.short_description
             console.print(79-len(sd),y,sd,fg=fg)
             if actor.is_keyholder:
-                console.print(79-len(sd)-2,y,'╒',fg=color.grey)
+                console.print(79-len(sd)-3,y,'o╖',fg=color.grey)
             y += 1
             if y > 22:
                 console.print(x+1,y,'...',fg=color.offwhite)
