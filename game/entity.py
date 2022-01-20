@@ -73,7 +73,7 @@ class Entity:
 
     @property
     def fov_actors(self):
-        return [e for e in self.gamemap.entities if self.fov[e.x,e.y]]
+        return [e for e in self.gamemap.entities if self.fov[e.x,e.y] and e is not self]
 
     @property
     def char(self):

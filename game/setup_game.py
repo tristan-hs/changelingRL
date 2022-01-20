@@ -117,7 +117,7 @@ class MainMenu(input_handlers.BaseEventHandler):
                 continue
             console.print(
                 65,
-                25 + (2*i),
+                26 + (2*i),
                 text.ljust(menu_width),
                 fg=color.white,
                 bg=color.black,

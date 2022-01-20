@@ -282,7 +282,7 @@ class GameWorld:
         self.items = item_factories
 
     def generate_floor(self) -> None:
-        from game.procgen import generate_dungeon, generate_consumable_testing_ground
+        from game.procgen import generate_dungeon
 
         self.current_floor += 1
 
