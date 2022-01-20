@@ -124,8 +124,6 @@ class BaseAI(Action):
         self._intent.append(BumpAction(self.entity,dx,dy))
 
 
-
-
 class DefaultNPC(BaseAI):
     chance_to_chat = 0.2
 
@@ -172,7 +170,7 @@ class DefaultNPC(BaseAI):
 
     @property
     def sees_a_changeling(self):
-        return any(i.changeling_form for i in self.fov_actors)
+        return any(i.changeling_form or i.name in self.entity.known_changelings for i in self.fov_actors)
 
     @property
     def heard_a_sighting(self):
@@ -188,7 +186,7 @@ class DefaultNPC(BaseAI):
             if self.suspicions[n] > 100 and n not in self.engine.investigations:
                 return n
         for a in self.fov_actors:
-            if a.is_dismantling:
+            if a.is_dismantling and a not in self.engine.investigations:
                 return a.name
         return False
 
@@ -353,11 +351,6 @@ class InvestigationNPC(DefaultNPC):
     needs_to_investigate = False
     has_to_pee = False
 
-    has_announced = False
-    subject_cleared = False
-    has_approached = False
-    subject_last_spotted = None
-
     def __init__(self,entity,parent,subject):
         super().__init__(entity,parent)
         self.subject = subject
@@ -365,6 +358,11 @@ class InvestigationNPC(DefaultNPC):
 
         self.engine.investigations.append(self.subject)
         self.engine.investigators.append(self.entity.name)
+
+        self.has_announced = False
+        self.subject_cleared = False
+        self.has_approached = False
+        self.subject_last_spotted = None
 
         if subject in parent.suspicions:
             del parent.suspicions[subject]
@@ -593,11 +591,15 @@ class FightOrFleeNPC(DefaultNPC):
     has_to_pee = False
     description = "fight or flight"
     short_description = '!'
-    has_announced = False
+
+    def __init__(self,entity,parent):
+        super().__init__(entity,parent)
+        self.has_announced = False
+
 
     @property
     def resolve(self):
-        if not any(a.changeling_form for a in self.fov_actors):
+        if not any(a.changeling_form or a.name in self.entity.known_changelings for a in self.fov_actors):
             return self.parent
 
     def decide(self):
@@ -624,7 +626,7 @@ class FightOrFleeNPC(DefaultNPC):
             return
 
         # if there are allies in sight, fight it
-        if any(not a.changeling_form and a is not self.entity for a in self.fov_actors):
+        if any(not a.changeling_form and a is not self.entity and a is not self.engine.player for a in self.fov_actors):
             return self.goto(self.engine.player.xy)
 
         else:

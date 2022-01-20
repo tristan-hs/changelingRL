@@ -72,6 +72,10 @@ class Entity:
         )
 
     @property
+    def fov_actors(self):
+        return [e for e in self.gamemap.entities if self.fov[e.x,e.y]]
+
+    @property
     def char(self):
         return self._char
 
@@ -204,6 +208,7 @@ class Actor(Entity):
         self.max_vigor = 48
         self._vigor = 48
         self.just_took_damage = False
+        self.known_changelings = []
 
     @property
     def color(self):
@@ -389,6 +394,10 @@ class Actor(Entity):
         self.engine.message_log.add_message(
             "Your transformation is complete.", self.color
         )
+
+        for a in self.fov_actors:
+            print(f"adding to {a.name}'s known changeling list")
+            a.known_changelings.append(self.name)
 
     def ooze(self):
         if not self.is_alive:
