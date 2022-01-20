@@ -362,7 +362,9 @@ def generate_dungeon(floor_number, map_width, map_height, engine, game_mode, ite
 			entity_factories.NPC.spawn(dungeon,*tile)
 			break
 
-	kh = random.choice(dungeon.actors)
+	a_by_d = dungeon.actors
+	a_by_d.sort(key=lambda x: x.distance(*engine.player.xy))
+	kh = a_by_d[-1]
 	KeyHolder(kh)
 
 	return dungeon
