@@ -319,9 +319,34 @@ class Actor(Entity):
 
     def preSpawn(self):
         while self.name == "<Unnamed>" or self.name in [e.name for e in self.gamemap.entities]:
-            self.name = random.choice(["Alice","Bob","Charlie","Doug","Emily","Fred","Grish","Hal","Ingus","Josh","Kzyl'xx","Lu","Mo","Ned","Otto","Pete","Quincy","Rod","Stu","Tim","Ulga","Viv","Yan","Zed"])
-        if self.char == "?":
+            self.name = random.choice([
+                "Alice","alex",
+                "Bob","brie",
+                "Charlie","cath",
+                "Doug","dee",
+                "Emily","elvis",
+                "Fred","flim",
+                "Grish","gav",
+                "Hal","horus",
+                "Ingus","ike",
+                "Josh","jupe",
+                "Kyle","kate",
+                "Lu","lee",
+                "Mo","mike",
+                "Ned","nance",
+                "Otto","oku",
+                "Pete","pat",
+                "Quincy","quark",
+                "Rod","rolo",
+                "Stu","suze",
+                "Tim","tam",
+                "Ulga","ulric",
+                "Viv","val",
+                "Yan","ymir",
+                "Zed","zack"
+            ])
             self.char = self.name[0]
+            self.name = self.name.capitalize()
         if not self.schedule:
             self.generateSchedule()
         self.last_peed = random.choice(range(240))

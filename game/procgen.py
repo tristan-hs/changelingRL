@@ -39,9 +39,17 @@ class Room:
 
 class MainHall(Room):
 	def __init__(self,map_width,map_height,dungeon):
-		super().__init__(map_width//2,map_height//2,map_width,map_height,dungeon)
+		super().__init__(*self.generate_seed(map_width,map_height,dungeon),map_width,map_height,dungeon)
 		self.name = "Main Hall"
 		self.generate()
+
+		if not hasattr(self,"parent"):
+			for i in range(4):
+				h = AuxHall(map_width,map_height,dungeon,self)
+				h.finalize()
+
+	def generate_seed(self, mw, mh, d):
+		return (mw//2, mh//2)
 
 	def generate(self):
 		directions = [[0,1],[0,-1],[-1,0],[1,0]]
@@ -54,11 +62,11 @@ class MainHall(Room):
 			growth_axis = 0 if growth_dir[0] != 0 else 1
 			static_axis = 0 if growth_axis == 1 else 0
 
-			width = random.choice([2,3,4,5]) if i > 0 else 5
+			width = random.choice([2,3,4]) if i > 0 else 4
 			x,y = self.seed
 
-			length_limit = 9
-			length = random.choice(range(width,length_limit)) if i > 0 else 8
+			length_limit = 13
+			length = random.choice(range(width,length_limit)) if i > 0 else random.choice(range(9,15))
 
 			x_range = (x-2,x-2+width) if growth_axis == 1 else (x,x+(length*growth_dir[0]))
 			y_range = (y-2,y-2+width) if growth_axis == 0 else (y,y+(length*growth_dir[1]))
@@ -69,12 +77,8 @@ class MainHall(Room):
 			for x in range(*x_range):
 				for y in range(*y_range):
 					tile = (x,y)
-					if tile not in self.tiles:
+					if tile not in self.tiles and self.dungeon.in_bounds(*tile) and 0 not in tile and tile[0] != self.map_width-1 and tile[1] != self.map_height-1:
 						self.tiles.append(tile)
-
-	def finalize(self):
-		super().finalize()
-		self.dungeon.upstairs_location = self.center
 
 	@property
 	def center(self):
@@ -83,6 +87,26 @@ class MainHall(Room):
 	@property
 	def inner(self):
 		return self.tiles
+
+class AuxHall(MainHall):
+	def __init__(self,map_width,map_height,dungeon,hall):
+		self.parent = hall
+		super().__init__(map_width,map_height,dungeon)
+
+	# get a tile 1 off from the main hall
+	def generate_seed(self,map_width,map_height,dungeon):
+		while True:
+			t = random.choice(self.parent.tiles)
+			permutations = [(t[0],t[1]+1),(t[0],t[1]-1),(t[0]+1,t[1]),(t[0]-1,t[1])]
+			random.shuffle(permutations)
+			for p in permutations:
+				if p not in self.parent.tiles:
+					return p
+		return tile
+
+	def finalize(self):
+		self.dungeon.upstairs_location = self.center
+		self.parent.tiles = list(set(self.parent.tiles).union(set(self.tiles)))
 
 class MainRoom(Room):
 	min_size = 3
@@ -103,12 +127,15 @@ class MainRoom(Room):
 		self.generate()
 
 	def add_closet(self):
-		closet = Closet(self.map_width,self.map_height,self.dungeon,self)
-		if closet.valid:
-			closet.finalize()
-			initials = ''.join([word[0] for word in self.name.split(' ')])
-			suffix = random.choice([". Toilet"])
-			closet.name = initials + suffix
+		attempts = 10
+		for i in range(attempts):
+			closet = Closet(self.map_width,self.map_height,self.dungeon,self)
+			if closet.valid:
+				closet.finalize()
+				initials = ''.join([word[0] for word in self.name.split(' ')])
+				suffix = random.choice([" Toilet"])
+				closet.name = initials + suffix
+				break
 
 	@property
 	def inner(self):
@@ -119,7 +146,7 @@ class MainRoom(Room):
 		self.dungeon.tiles[self.sprout] = tile_types.door
 
 	def find_seed(self):
-		attempts = 1000
+		attempts = 100
 		for i in range(attempts):
 			if i == attempts:
 				raise Exception("No seed found")
@@ -152,7 +179,9 @@ class MainRoom(Room):
 		max_size = self.max_size
 		attempts = 0
 
-		while x2-x1 < max_size or y2-y1 < max_size:
+		while (x2-x1 < max_size or y2-y1 < max_size) and attempts < 100:
+			attempts += 1
+
 			potential_dirs = [d for d in DIRECTIONS if d != forbidden_dir and abs(d[0]) != abs(d[1]) and (d[0] == 0 or x2-x1 < max_size) and (d[1] == 0 or y2-y1 < max_size)]
 			random.shuffle(potential_dirs)
 
@@ -164,7 +193,7 @@ class MainRoom(Room):
 				ny1 = y1 if d[1] > -1 else y1-1
 				ny2 = y2 if d[1] < 1 else y2+1
 
-				if nx1 < 0 or nx2 > self.map_width-3 or ny1 < 0 or ny2 > self.map_height-3:
+				if nx1 < 1 or nx2 > self.map_width-3 or ny1 < 1 or ny2 > self.map_height-3:
 					continue
 
 				new_tiles = []
@@ -172,7 +201,16 @@ class MainRoom(Room):
 					for y in range(ny1,ny2+1):
 						new_tiles.append((x,y))
 
-				if any(tile in room.tiles for room in self.dungeon.rooms for tile in new_tiles):
+				def check_tiles(tiles):
+					for room in self.dungeon.rooms:
+						for t1 in tiles:
+							if t1 in room.tiles:
+								if attempts % 100 == 0:
+									print(f"intersect w/ {room.name}")
+								return False
+					return True
+
+				if not check_tiles(new_tiles):
 					continue
 
 				def next_to(tile1,tile2):
@@ -181,7 +219,7 @@ class MainRoom(Room):
 					return False
 
 				def check_adjacency():
-					rooms = [r for r in self.dungeon.rooms if r.closet or r.name == "Main Hall"]
+					rooms = [r for r in self.dungeon.rooms if r.closet or r.name == "Main Hall" or r.name == "Aux Hall"]
 					for r in rooms:
 						for t1 in r.tiles:
 							if any(next_to(t1,t2) for t2 in new_tiles):
@@ -298,46 +336,60 @@ class Closet(MainRoom):
 
 
 def generate_dungeon(floor_number, map_width, map_height, engine, game_mode, items):
-	# per room:
-			# give it a closet
+	print("generate dungeon")
 
 	dungeon = GameMap(engine, map_width, map_height, floor_number, entities=[engine.player], items=[], game_mode=game_mode)
 	
 	hall = MainHall(map_width,map_height,dungeon)
 	hall.finalize()
 
+	print("finish main hall")
+
 	attempts = 1000
 	for i in range(attempts):
-		shuttle = ShuttleRoom(map_width,map_height,dungeon,hall)
+		h = hall
+		shuttle = ShuttleRoom(map_width,map_height,dungeon,h)
 		if not shuttle.valid:
 			continue
 		shuttle.name = "Shuttle"
 		shuttle.finalize()
 		break
 
-	if not [r for r in dungeon.rooms if r.name == "Shuttle"]:
+	if not shuttle.valid:
+		print("shuttle invalid")
 		return generate_dungeon(floor_number,map_width,map_height,engine,game_mode,items)
 
-	room_names = ["Bunks","Mess Hall","Engine","Bridge","Observations","Lab","Rec Room","Holohall","Workshop","Green Room","Salon","Terrarium"]
+	print("finish shuttle")
+
+	room_names = ["Bunks","Cafeteria","Engine","Bridge","Observation Deck","Lab","Rec Room","Holohall","Workshop","Green Room","Salon","Terrarium","Gym","Pressurizer","Quantum Effigy","HR Office","Storage Room","Launchpad","Gunnery","Greenhouse","Kitchen","Chapel","Incident Room","Sprobble Nook"]
 	random.shuffle(room_names)
 
-	room_number = random.choice(range(4,12))
+	room_number = random.choice(range(10,20))
 	main_rooms = []
 	for i in range(room_number):
-		attempts = 1000
+		attempts = 1000 - (i*i*2)
 		for i in range(attempts):
-			room = MainRoom(map_width,map_height,dungeon,hall)
+			h = hall
+			room = MainRoom(map_width,map_height,dungeon,h)
 			if not room.valid:
 				continue
 
 			room.name = room_names.pop()
 			room.finalize()
-			room.add_closet()
+			if random.random() < 0.3:
+				room.add_closet()
 			main_rooms.append(room)
 			break
+
+	print("finish main rooms")
 	
 	toilets = [room for room in dungeon.rooms if room.closet]
-	if len(toilets) < 2 or len(main_rooms) < 4:
+	if len(toilets) < len(main_rooms)/6:
+		print("not enough toilets")
+		return generate_dungeon(floor_number,map_width,map_height,engine,game_mode,items)
+
+	if len(main_rooms) < 10:
+		print("not enough rooms")
 		return generate_dungeon(floor_number,map_width,map_height,engine,game_mode,items)
 
 	starting_toilet = random.choice(toilets)
@@ -351,7 +403,9 @@ def generate_dungeon(floor_number, map_width, map_height, engine, game_mode, ite
 			npc.last_peed = 0
 			break
 
-	NPC_number = random.choice(range(8,14))
+	print("finish player setup")
+
+	NPC_number = len(dungeon.rooms)*2
 	for i in range(NPC_number):
 		room = random.choice([room for room in dungeon.rooms if room.name != "Shuttle" and not room.closet])
 		tiles = room.inner
@@ -362,10 +416,14 @@ def generate_dungeon(floor_number, map_width, map_height, engine, game_mode, ite
 			entity_factories.NPC.spawn(dungeon,*tile)
 			break
 
+	print("finish npc placement")
+
 	a_by_d = dungeon.actors
 	a_by_d.sort(key=lambda x: x.distance(*engine.player.xy))
-	kh = a_by_d[-1]
-	KeyHolder(kh)
+	kh1 = a_by_d[-1]
+	#kh2 = a_by_d[-2]
+	KeyHolder(kh1)
+	#KeyHolder(kh2)
 
 	return dungeon
 

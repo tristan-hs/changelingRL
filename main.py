@@ -63,7 +63,8 @@ def main() -> None:
 
                     except exceptions.NewGame as e:
                         root_console.clear()
-                        root_console.print(32,24,"Loading level...")
+                        root_console.print(32,24,"Generating level...")
+                        root_console.print(26,26,"(This may take up to a minute)",color.grey)
                         context.present(root_console)
 
                         handler = input_handlers.MainGameEventHandler(setup_game.new_game(e.meta))
