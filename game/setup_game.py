@@ -102,10 +102,10 @@ class MainMenu(input_handlers.BaseEventHandler):
         console.draw_semigraphics(background_image, 0, 0)
 
         console.print(
-            console.width - 16,
-            console.height - 3,
+            console.width - 14,
+            console.height - 5,
             "by -taq",
-            fg=color.purple,
+            fg=color.grey,
             alignment=tcod.CENTER,
         )
 
@@ -116,8 +116,8 @@ class MainMenu(input_handlers.BaseEventHandler):
             if i == 0 and not self.engine:
                 continue
             console.print(
-                72,
-                19 + (2*i),
+                65,
+                25 + (2*i),
                 text.ljust(menu_width),
                 fg=color.white,
                 bg=color.black,
@@ -158,7 +158,7 @@ class SubMenu(input_handlers.BaseEventHandler):
         return None
 
     def on_render(self, console:tcod.Console) -> None:
-        console.draw_semigraphics(background_image, 0, 0)
+        #console.draw_semigraphics(background_image, 0, 0)
         console.print(7,47,"(ESC) to go back")
 
     
