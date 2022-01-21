@@ -340,7 +340,7 @@ class DefaultNPC(BaseAI):
             lines.append(f"{i}'s on the move. Guess someone went missing.")
 
         if len(self.engine.investigations) > 1:
-            keyholder = [a for a in self.engine.game_map.actors if a.is_keyholder and a is not self.engine.player]
+            keyholder = [a for a in self.engine.game_map.actors if a.is_keyholder and a is not self.engine.player and a is not self.entity]
             if len(keyholder):
                 kh = keyholder[0].name
                 lines.append(f"With all these disappearances, {kh} should just start the evacuation.")
