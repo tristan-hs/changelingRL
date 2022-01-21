@@ -96,17 +96,24 @@ def render_run_info(
     if not player.changeling_form:
         console.draw_frame(60,8,20,6)
         console.print_box(61,8,8,1,"SCHEDULE")
-        times = list(player.schedule.keys())
-        times.sort()
-        sched = ''
-        for j,i in enumerate(times):
-            k = f"0{i}" if i < 10 else i
-            n = player.schedule[i].name
-            if len(n) > 10:
-                n = n[:8]+'..'
-            sched = f"{k}:00 - {n}"
-            c = color.offwhite if player.schedule[i] is player.scheduled_room else color.grey
-            console.print(61,9+j,sched,c)
+
+        
+        if player.name in player.engine.investigators:
+            i = player.engine.investigators.index(player.name)
+            missing = player.engine.investigations[i]
+            console.print_box(61,9,18,4,f"investigate {missing}'s disappearance\n(free roam)",fg=color.grey,bg=color.black)
+        else:
+            times = list(player.schedule.keys())
+            times.sort()
+            sched = ''
+            for j,i in enumerate(times):
+                k = f"0{i}" if i < 10 else i
+                n = player.schedule[i].name
+                if len(n) > 10:
+                    n = n[:8]+'..'
+                sched = f"{k}:00 - {n}"
+                c = color.offwhite if player.schedule[i] is player.scheduled_room else color.grey
+                console.print(61,9+j,sched,c)
 
     else:
         c = color.changeling
