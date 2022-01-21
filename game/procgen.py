@@ -256,8 +256,8 @@ class MainRoom(Room):
 				self.sprout = self.seed
 
 class ShuttleRoom(MainRoom):
-	min_size = 6
-	max_size = 11
+	min_size = 11
+	max_size = 15
 
 	def finalize(self):
 		super().finalize()
