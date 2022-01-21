@@ -250,18 +250,12 @@ class MainGameEventHandler(EventHandler):
         elif key == tcod.event.K_v:
             return HistoryViewer(self.engine)
 
-        elif key == tcod.event.K_i:
-            return InventorySelectHandler(self.engine)
-
         elif key == tcod.event.K_x:
             return LookHandler(self.engine)
 
         elif key == tcod.event.K_TAB:
             if not self.engine.player.changeling_form:
                 self.engine.player.cycle_bump()
-
-        elif key == tcod.event.K_c:
-            self.engine.show_instructions = not self.engine.show_instructions
 
         # No valid key was pressed
         return action
